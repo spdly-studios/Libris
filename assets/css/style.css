@@ -346,6 +346,21 @@ h4 {
   display: block;
 }
 
+body.ai-workspace #page-container {
+  padding: 0;
+  overflow: hidden;
+}
+
+body.ai-workspace #page-ai-librarian {
+  width: 100%;
+  max-width: none;
+  height: calc(100vh - var(--topbar-height));
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 /* ==========================================================================
    Sidebar Navigation (Minimal, Flat, Clean)
    ========================================================================== */
@@ -573,8 +588,93 @@ h4 {
   background-color: var(--bg-hover);
 }
 
+.profile-avatar-large {
+  width: 112px;
+  height: 112px;
+  flex: 0 0 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 32px;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  color: #fff;
+  border: 5px solid var(--bg-primary);
+  box-shadow: 0 0 0 1px var(--border), 0 14px 30px rgba(37, 99, 235, 0.22);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow: hidden;
+  position: relative;
+}
+
+.profile-avatar-large::after {
+  content: '';
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  right: -12px;
+  bottom: -14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.profile-avatar-large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px var(--border), 0 18px 36px rgba(37, 99, 235, 0.28);
+}
+
+@media (max-width: 640px) {
+  .profile-avatar-large {
+    width: 88px;
+    height: 88px;
+    flex-basis: 88px;
+    border-radius: 26px;
+    font-size: 28px;
+  }
+}
+
 .header-user-details {
   line-height: 1.2;
+  min-width: 0;
+  max-width: 180px;
+  cursor: pointer;
+}
+
+.header-user-details #header-user-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#header-user-role {
+  align-self: flex-start;
+  line-height: 1.2;
+}
+
+#header-logout-btn {
+  flex: 0 0 auto;
+  margin-left: 2px;
+  color: var(--text-secondary);
+}
+
+#header-logout-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+#sidebar .nav-item:focus,
+#sidebar .nav-item:focus-visible,
+#sidebar .nav-item:active {
+  outline: none;
+  box-shadow: none;
+  border-top: 0;
+}
+
+#sidebar .nav-item[data-page="profile"] {
+  border-top: 0;
 }
 
 /* ==========================================================================
@@ -1994,6 +2094,65 @@ input:checked+.slider:before {
   box-shadow: var(--shadow-md);
   max-width: 100% !important;
   margin: 0 !important;
+  min-height: 0;
+}
+
+.ai-book-recommendations {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.ai-book-suggestion {
+  display: grid;
+  grid-template-columns: 24px 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ai-book-suggestion:hover {
+  border-color: var(--brand-border);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.ai-book-rank {
+  color: var(--text-tertiary);
+  font-weight: 700;
+  text-align: center;
+}
+
+.ai-book-cover {
+  width: 42px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.ai-book-info { min-width: 0; }
+.ai-book-info h4 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-book-info p { color: var(--text-secondary); font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-book-kicker { color: var(--brand); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.ai-book-meta { display: flex; gap: 10px; color: var(--text-tertiary); font-size: 10px; margin-top: 5px; }
+.ai-book-meta span:first-child { color: var(--success); }
+.ai-book-actions { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+
+@media (max-width: 640px) {
+  .ai-book-suggestion { grid-template-columns: 20px 38px minmax(0, 1fr); }
+  .ai-book-cover { width: 38px; height: 50px; }
+  .ai-book-actions { grid-column: 2 / -1; justify-content: flex-start; }
 }
 
 .chat-header {
@@ -2024,6 +2183,8 @@ input:checked+.slider:before {
 
 .chat-messages {
   flex: 1;
+  min-height: 0;
+  height: 0;
   padding: 24px;
   overflow-y: auto;
   display: flex;
@@ -2059,6 +2220,7 @@ input:checked+.slider:before {
   font-size: 14px;
   line-height: 1.6;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .chat-bubble.ai .bubble-content,
@@ -2117,6 +2279,7 @@ input:checked+.slider:before {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 #chat-input {
@@ -2977,6 +3140,7 @@ html[data-theme='dark'] #top-bar {
 .welcome-banner p {
   color: rgba(255, 255, 255, .68);
   font-size: 14px;
+  min-width: 0;
 }
 
 html[data-theme='dark'] .welcome-banner {

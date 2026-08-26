@@ -9,6 +9,7 @@ if (process.argv[2] !== '--confirm-reset') {
 admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)) });
 const auth = admin.auth();
 const db = admin.firestore();
+const adminEmail = process.env.LIBRIS_ADMIN_EMAIL || 'vshivaprasad07@gmail.com';
 
 const collections = ['users', 'books', 'notes', 'transactions', 'fines', 'seatBookings', 'roomBookings', 'notifications', 'analytics'];
 async function deleteCollection(name) {
@@ -32,7 +33,7 @@ for (const collection of collections) await deleteCollection(collection);
 console.log('Reset complete. Seeding initial deployment data...');
 
 const users = [
-  { email: 'admin@libris.test', name: 'Libris Administrator', role: 'admin', department: 'Library Services', semester: 0 },
+  { email: adminEmail, name: 'Libris Administrator', role: 'admin', department: 'Library Services', semester: 0 },
   ...Array.from({ length: 5 }, (_, i) => ({
     email: `student${i + 1}@libris.test`, name: `Test Student ${i + 1}`,
     role: 'student', department: ['Computer Science', 'Electronics', 'Mechanical', 'Physics', 'Civil'][i], semester: i + 1

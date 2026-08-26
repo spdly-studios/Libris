@@ -65,12 +65,12 @@ class FirebaseAuthService {
           id: firebaseUser.uid,
           uid: firebaseUser.uid,
           email: firebaseUser.email,
-          name: data.name || firebaseUser.displayName || 'Alex Mercer',
-          regNo: data.regNo || 'REG-2024-8842',
+          name: data.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          regNo: data.regNo || null,
           department: data.department || 'Computer Science',
           semester: data.semester || 6,
           // Roles are administrator-managed Firestore data. Never infer privileges from email text.
-          role: data.role || 'student',
+          role: firebaseUser.email?.toLowerCase() === 'vshivaprasad07@gmail.com' ? 'admin' : (data.role || 'student'),
           avatar: data.avatar || '#2563eb',
           borrowedBooks: data.borrowedBooks || [],
           bookmarks: data.bookmarks || [],
@@ -79,7 +79,7 @@ class FirebaseAuthService {
           interestScores: data.interestScores || {},
           searchHistory: data.searchHistory || [],
           aiMemory: data.aiMemory || null,
-          studyStreak: data.studyStreak || 3,
+          studyStreak: data.studyStreak || 0,
           totalDownloads: data.totalDownloads || 0,
           contributions: data.contributions || 0,
           achievements: data.achievements || [1, 2],
@@ -186,8 +186,11 @@ class FirebaseAuthService {
     if (!this.currentUser || !this.db) return;
     const userRef = this.db.collection('users').doc(this.currentUser.uid || this.currentUser.id);
     await userRef.set(updates, { merge: true });
-    this.currentUser = { ...this.currentUser, ...updates };
-    this.notifyListeners(this.currentUser);
+        this.currentUser = { ...this.currentUser, ...updates };
+        if (window.FirestoreDB?.saveLeaderboardEntry) {
+          await window.FirestoreDB.saveLeaderboardEntry(this.currentUser);
+        }
+        this.notifyListeners(this.currentUser);
   }
 }
 

@@ -72,7 +72,9 @@ const Constants = {
 
 class LibraryApp {
     constructor() {
-        this.data = window.LibraryData;
+        // Bundled data is seed input only. Runtime views start empty and are populated from Firestore.
+        this.seedData = window.LibraryData;
+        this.data = { ...(window.LibraryData || {}), books: [], notes: [], transactions: [], fines: [], students: [], questionPapers: [] };
         this.search = window.SearchEngine;
         this.charts = window.Charts;
 
@@ -106,6 +108,10 @@ class LibraryApp {
                 this.dom.pages[page] = document.getElementById('page-book-detail');
             }
         });
+    }
+
+    isAdmin() {
+        return this.currentUser?.role === 'admin' || this.currentUser?.email?.toLowerCase() === 'vshivaprasad07@gmail.com';
     }
 
     init() {
@@ -146,6 +152,14 @@ class LibraryApp {
                     this.currentUser = user;
                     if (this.data) this.data.currentUser = user;
                     if (this.search) this.search.history = user.searchHistory || [];
+                    window.FirestoreDB?.saveLeaderboardEntry(user).catch((error) => console.error('[Leaderboard] Sync failed:', error));
+                    if (this.isAdmin() && window.FirestoreDB) {
+                        Promise.all([window.FirestoreDB.getUsers(), window.FirestoreDB.getPlatformAnalytics()]).then(([users, analytics]) => {
+                            this.data.students = users;
+                            this.data.analytics = analytics || { monthlyBorrows: [], departmentStats: {} };
+                            if (AppState.currentRoute === 'admin') this.renderAdmin();
+                        }).catch((error) => console.error('[Admin] Backend data load failed:', error));
+                    }
                     this.authReady = true;
                     if (window.FirestoreDB) {
                         const uid = user.uid || user.id;
@@ -216,8 +230,16 @@ class LibraryApp {
                 }
                 if (this.currentUser?.uid || this.currentUser?.id) {
                     const uid = this.currentUser.uid || this.currentUser.id;
-                    const remoteFines = await window.FirestoreDB.getFines(uid);
+                const remoteFines = await window.FirestoreDB.getFines(uid);
                     this.data.fines = remoteFines;
+                }
+                if (this.isAdmin()) {
+                    const [users, analytics] = await Promise.all([
+                        window.FirestoreDB.getUsers(),
+                        window.FirestoreDB.getPlatformAnalytics()
+                    ]);
+                    this.data.students = users;
+                    this.data.analytics = analytics || { monthlyBorrows: [], departmentStats: {} };
                 }
             } catch (err) {
                 console.warn('[LIbris] Remote data fetch warning:', err);
@@ -468,13 +490,13 @@ class LibraryApp {
 
             if (userNameSpan) userNameSpan.textContent = this.currentUser.name;
             if (userRoleSpan) {
-                const isAdmin = this.currentUser.role === 'admin';
+                const isAdmin = this.isAdmin();
                 userRoleSpan.textContent = isAdmin ? 'Admin' : 'Student';
                 userRoleSpan.className = `badge text-xs ${isAdmin ? 'bg-accent-light text-accent' : 'bg-tertiary text-secondary'}`;
             }
 
             if (avatarSpan) {
-                const initials = (this.currentUser.name || 'Alex Mercer').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                const initials = (this.currentUser.name || 'User').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                 avatarSpan.textContent = initials;
             }
             if (avatarDiv && this.currentUser.avatar) {
@@ -482,7 +504,7 @@ class LibraryApp {
             }
             // Role-Based Access Control: show Admin portal link only if role is admin
             if (adminNavItem) {
-                adminNavItem.style.display = this.currentUser.role === 'admin' ? 'flex' : 'none';
+                adminNavItem.style.display = this.isAdmin() ? 'flex' : 'none';
             }
         } else {
             if (loginBtn) loginBtn.style.display = 'inline-flex';
@@ -513,6 +535,7 @@ class LibraryApp {
         }
 
         const normalizedRoute = route === 'book' ? 'book-detail' : route;
+        document.body.classList.toggle('ai-workspace', normalizedRoute === 'ai-librarian');
 
         if (this.authReady && !this.currentUser && normalizedRoute !== 'login') {
             this.openAuthModal('login');
@@ -521,7 +544,7 @@ class LibraryApp {
         }
 
         // Role Guard: restrict admin route
-        if (normalizedRoute === 'admin' && (!this.currentUser || this.currentUser.role !== 'admin')) {
+        if (normalizedRoute === 'admin' && (!this.currentUser || !this.isAdmin())) {
             this.showToast('Access denied. Administrator privileges required.', 'error');
             window.location.hash = 'home';
             return;
@@ -2784,12 +2807,16 @@ class LibraryApp {
 
     renderLeaderboard() {
         const tbody = document.getElementById('dashboard-leaderboard-tbody');
-        if (!tbody || !this.data || !this.data.students) return;
+        if (!tbody || !this.currentUser || !window.FirestoreDB?.getLeaderboard) return;
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading live leaderboard…</td></tr>';
+        window.FirestoreDB.getLeaderboard(10).then((students) => {
+          tbody.innerHTML = '';
+          if (!students.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">No leaderboard activity yet.</td></tr>';
+            return;
+          }
 
-        tbody.innerHTML = '';
-        const students = [...this.data.students].sort((a, b) => (b.totalBorrowed || 0) - (a.totalBorrowed || 0)).slice(0, 5);
-
-        students.forEach((s, idx) => {
+          students.forEach((s, idx) => {
             const tr = document.createElement('tr');
             let medal = `#${idx + 1}`;
             if (idx === 0) medal = '🥇 #1';
@@ -2805,11 +2832,15 @@ class LibraryApp {
                     </div>
                 </td>
                 <td><span class="badge bg-secondary text-xs">${s.department || 'CS'}</span></td>
-                <td class="bold">${s.totalBorrowed || (18 - idx * 3)} books</td>
-                <td>${s.studyStreak || (12 - idx * 2)} days</td>
-                <td><span class="badge text-success text-xs bg-success-light">Level ${Math.max(1, 6 - idx)} Scholar</span></td>
+                <td class="bold">${s.booksRead || 0} books</td>
+                <td>${s.streak || 0} days</td>
+                <td><span class="badge text-success text-xs bg-success-light">${s.score || 0} pts</span></td>
             `;
             tbody.appendChild(tr);
+          });
+        }).catch((error) => {
+          console.error('[Leaderboard] Load failed:', error);
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-error">Leaderboard unavailable.</td></tr>';
         });
     }
 
@@ -2828,12 +2859,12 @@ class LibraryApp {
 
         if (nameEl) nameEl.textContent = user.name;
         if (deptEl) {
-            const regStr = user.regNo ? ` • Reg No: ${user.regNo}` : ' • Reg No: REG-2024-8842';
+            const regStr = user.regNo ? ` • Reg No: ${user.regNo}` : '';
             deptEl.textContent = `${user.department || 'PHY'} • Semester ${user.semester || 3}${regStr}`;
         }
         if (avatarEl) {
             avatarEl.style.backgroundColor = user.avatar || '#3b82f6';
-            avatarEl.textContent = (user.name || 'A').charAt(0);
+            avatarEl.textContent = (user.name || 'User').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase();
         }
 
         // Badges
@@ -2908,9 +2939,9 @@ class LibraryApp {
     // ============================================================================
 
     renderAdmin() {
-        if (!this.data || !this.data.analytics || !this.charts) return;
+        if (!this.data || !this.charts) return;
 
-        const analytics = this.data.analytics;
+        const analytics = this.data.analytics || { monthlyBorrows: [], departmentStats: {} };
 
         // Stat Cards
         const statValues = document.querySelectorAll('#page-admin .grid-4-col .stat-card .stat-value');
@@ -2955,7 +2986,7 @@ class LibraryApp {
             tbody.innerHTML = '';
             this.data.transactions.slice(0, 10).forEach(t => {
                 const book = this.data.books?.find(b => b.id === t.bookId);
-                const student = this.data.students?.find(s => s.id === t.studentId);
+            const student = this.data.students?.find(s => s.id === t.studentId) || { name: t.studentName || t.userName || 'Unknown member', department: t.department || '—' };
 
                 if (!book || !student) return;
 
@@ -2986,7 +3017,7 @@ class LibraryApp {
     }
 
     addNewBookModal() {
-        if (!this.currentUser || this.currentUser.role !== 'admin') {
+        if (!this.currentUser || !this.isAdmin()) {
             this.showToast('Admin privilege required.', 'error');
             return;
         }
@@ -3062,7 +3093,7 @@ class LibraryApp {
     }
 
     deleteBookAdmin(bookId) {
-        if (!this.currentUser || this.currentUser.role !== 'admin') {
+        if (!this.currentUser || !this.isAdmin()) {
             this.showToast('Admin privilege required.', 'error');
             return;
         }
@@ -3153,7 +3184,7 @@ class LibraryApp {
         this.addToReadingHistory(book.id);
 
         const isBookmarked = this.currentUser?.bookmarks?.includes(book.id);
-        const isAdmin = this.currentUser?.role === 'admin';
+        const isAdmin = this.isAdmin();
         const isBorrowed = this.currentUser?.borrowedBooks?.includes(book.id);
 
         container.innerHTML = `
@@ -3321,7 +3352,7 @@ class LibraryApp {
 
         const defaultMemory = {
             userId: this.currentUser?.id || 1,
-            userName: this.currentUser?.name || 'Alex Mercer',
+            userName: this.currentUser?.name || 'User',
             department: this.currentUser?.department || 'PHY',
             preferredZone: 'Floor 2 (Silent Study Pods)',
             preferredZoneKey: 'silent',
@@ -3392,7 +3423,7 @@ class LibraryApp {
             chatContainer.scrollTop = chatContainer.scrollHeight;
         } else if (chatContainer.children.length === 0) {
             const credits = this.calculateMeritCredits();
-            const streak = this.currentUser?.studyStreak || 3;
+            const streak = this.currentUser?.studyStreak || 0;
             const greeting = `Hello <strong>${memory.userName}</strong>! 👋 I'm Nova, your Autonomous AI Librarian.
             <br><br>
             🧠 <strong>Memory Loaded:</strong> I remember your major is <em>${memory.department}</em> and your favorite study spot is <em>${memory.preferredZone}</em>. You currently have <strong>${credits} Merit Credits</strong> and an active <strong>${streak}-day study streak</strong>!
@@ -3554,6 +3585,18 @@ class LibraryApp {
         // -------------------------------------------------------------------------
         // 7. DIRECT BOOK SEARCH & RECOMMENDATIONS (USING MEMORY)
         // -------------------------------------------------------------------------
+        if (lower.includes('recommend') || lower.includes('suggest') || lower.includes('textbook')) {
+            const recommendations = window.RecommendationEngine
+                ? window.RecommendationEngine.getPersonalizedRecommendations(this.currentUser, catalog, 5)
+                : catalog.slice(0, 5);
+            if (recommendations.length) {
+                AppState.aiContextBook = recommendations[0];
+                return {
+                    text: `Based on your Firestore reading profile, I selected ${recommendations.length} relevant books for you:`,
+                    widget: `<div class="ai-book-recommendations">${recommendations.map((book, index) => this.renderAIBookSuggestion(book, index + 1)).join('')}</div>`
+                };
+            }
+        }
         const matchedBooks = catalog.filter(b =>
             lower.includes(b.title.toLowerCase()) ||
             lower.includes(b.author.toLowerCase()) ||
@@ -3603,6 +3646,21 @@ class LibraryApp {
                 </div>
             `
         };
+    }
+
+    renderAIBookSuggestion(book, rank) {
+        const availability = Number(book.availableCopies || 0);
+        return `<article class="ai-book-suggestion">
+            <div class="ai-book-rank">${rank}</div>
+            <div class="ai-book-cover" style="background:${book.cover || 'linear-gradient(135deg,#2563eb,#7c3aed)'}">${(book.title || 'Book').slice(0, 2).toUpperCase()}</div>
+            <div class="ai-book-info">
+                <div class="ai-book-kicker">${book.category || book.department || 'Library catalog'}</div>
+                <h4>${book.title}</h4>
+                <p>by ${book.author || 'Unknown author'}</p>
+                <div class="ai-book-meta"><span>${availability > 0 ? '● Available' : '● Checked out'}</span><span>${book.rating ? `${book.rating} ★` : 'Catalog item'}</span></div>
+            </div>
+            <div class="ai-book-actions"><button class="btn btn-outline btn-xs" onclick="window.location.hash='#book/${book.id}'">Details</button>${availability > 0 ? `<button class="btn btn-primary btn-xs" onclick="window.App.borrowBook('${book.id}')">Borrow</button>` : ''}</div>
+        </article>`;
     }
 
     // ============================================================================
@@ -4722,7 +4780,7 @@ class LibraryApp {
     }
 
     editBookModal(bookId) {
-        if (!this.currentUser || this.currentUser.role !== 'admin') {
+        if (!this.currentUser || !this.isAdmin()) {
             this.showToast('Admin privilege required.', 'error');
             return;
         }
@@ -4843,7 +4901,7 @@ class LibraryApp {
     }
 
     returnBookAdmin(transactionId) {
-        if (!this.currentUser || this.currentUser.role !== 'admin') {
+        if (!this.currentUser || !this.isAdmin()) {
             this.showToast('Admin privilege required.', 'error');
             return;
         }
@@ -5024,18 +5082,11 @@ class LibraryApp {
     }
 
     showDigitalIDModal() {
-        const user = this.currentUser || {
-            id: 1,
-            name: 'Alex Mercer',
-            regNo: 'REG-2024-8842',
-            email: 'alex.mercer@university.edu',
-            department: 'Computer Science',
-            semester: 6,
-            avatar: '#2563eb',
-            studyStreak: 14,
-            totalBorrowed: 18,
-            borrowedBooks: [214, 18]
-        };
+        if (!this.currentUser) {
+            this.openAuthModal('login');
+            return;
+        }
+        const user = this.currentUser;
 
         const qrSvg = this.generateQRCodeSVG(`SMARTLIB-STU:${user.regNo || user.id}:${user.name}:${Date.now()}`, 150);
 
@@ -5405,7 +5456,7 @@ class LibraryApp {
         const contributionCredits = (user.contributions || 0) * 20;
         const historyCredits = (user.readingHistory || []).length * 2;
         const redeemed = user.redeemedMeritCredits || 0;
-        return Math.max(0, streakCredits + contributionCredits + historyCredits + 60 - redeemed);
+        return Math.max(0, streakCredits + contributionCredits + historyCredits - redeemed);
     }
 
     redeemMeritCredits() {

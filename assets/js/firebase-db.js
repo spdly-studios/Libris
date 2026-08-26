@@ -263,6 +263,30 @@ class FirestoreDBService {
     }
   }
 
+  async saveLeaderboardEntry(user) {
+    if (!this.db || !user?.uid) throw new Error('Authenticated Firestore connection required');
+    const booksRead = (user.readingHistory || []).length;
+    const streak = Number(user.studyStreak || 0);
+    const contributions = Number(user.contributions || 0);
+    const score = booksRead * 10 + streak * 5 + contributions * 20;
+    await this.db.collection('leaderboard').doc(user.uid).set({
+      uid: user.uid, name: user.name || 'Student', department: user.department || 'General',
+      booksRead, streak, contributions, score, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  }
+
+  async getLeaderboard(limit = 20) {
+    if (!this.db) return [];
+    const snap = await this.db.collection('leaderboard').orderBy('score', 'desc').limit(limit).get();
+    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  }
+
+  async getUsers() {
+    if (!this.db) return [];
+    const snap = await this.db.collection('users').get();
+    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  }
+
   async updatePlatformAnalytics(data) {
     if (!this.db) return;
     await this.db.collection('analytics').doc('platform').set(data, { merge: true });

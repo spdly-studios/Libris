@@ -66,24 +66,11 @@ window.seedFirestoreDatabase = async function() {
       }
     }
 
-    // 5b. Seed Student Profiles into /users
-    if (data.students && data.students.length > 0) {
-      for (const student of data.students) {
-        const ref = db.collection('users').doc(String(student.id));
-        batch.set(ref, {
-          ...student,
-          role: student.role || 'student',
-          interestScores: student.interestScores || { "Algorithms": 10, "Machine Learning": 15 },
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-      }
-    }
-
-    // 6. Seed Platform Analytics baseline doc
+    // 5b. Seed Platform Analytics from the real catalog migration.
     const analyticsRef = db.collection('analytics').doc('platform');
     batch.set(analyticsRef, {
-      totalBorrows: data.transactions ? data.transactions.length : 145,
-      totalUsers: (data.students ? data.students.length : 18) + 2,
+      totalBorrows: data.transactions ? data.transactions.length : 0,
+      totalUsers: 0,
       departmentStats: (data.analytics && data.analytics.departmentStats) || { CS: 45, ECE: 30, ME: 25, PHY: 20 },
       monthlyBorrows: (data.analytics && data.analytics.monthlyBorrows) || [65, 80, 110, 95, 120, 140, 130, 155, 170, 160, 185, 200],
       seededAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -123,16 +110,22 @@ window.resetAndSeedInitialData = async function () {
         }
       } while (!snapshot.empty);
     }
-    const accounts = [{ email: 'admin@libris.test', name: 'Libris Administrator', role: 'admin', department: 'Library Services', semester: 0 }, ...Array.from({ length: 5 }, (_, i) => ({ email: `student${i + 1}@libris.test`, name: `Test Student ${i + 1}`, role: 'student', department: ['Computer Science', 'Electronics', 'Mechanical', 'Physics', 'Civil'][i], semester: i + 1 }))];
+    const adminEmail = 'vshivaprasad07@gmail.com';
+    const adminPassword = prompt(`Enter the Firebase password for ${adminEmail} to bootstrap admin access:`);
+    if (!adminPassword) throw new Error('Admin password is required for bootstrap.');
+    const accounts = [{ email: adminEmail, name: 'Libris Administrator', role: 'admin', department: 'Library Services', semester: 0 }, ...Array.from({ length: 5 }, (_, i) => ({ email: `student${i + 1}@libris.test`, name: `Test Student ${i + 1}`, role: 'student', department: ['Computer Science', 'Electronics', 'Mechanical', 'Physics', 'Civil'][i], semester: i + 1 }))];
     for (const account of accounts) {
       let credential;
-      try { credential = await window.fbAuth.createUserWithEmailAndPassword(account.email, 'Libris-Test-2026!'); }
-      catch (error) { if (error.code === 'auth/email-already-in-use') continue; throw error; }
+      try { credential = await window.fbAuth.createUserWithEmailAndPassword(account.email, account.email === adminEmail ? adminPassword : 'Libris-Test-2026!'); }
+      catch (error) {
+        if (error.code !== 'auth/email-already-in-use') throw error;
+        credential = await window.fbAuth.signInWithEmailAndPassword(account.email, account.email === adminEmail ? adminPassword : 'Libris-Test-2026!');
+      }
       await window.fbDb.collection('users').doc(credential.user.uid).set({ uid: credential.user.uid, email: account.email, ...account, borrowedBooks: [], bookmarks: [], readingHistory: [], interestScores: {}, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
       await window.fbAuth.signOut();
     }
     // Re-authenticate as the seed administrator before writing shared catalog data.
-    await window.fbAuth.signInWithEmailAndPassword('admin@libris.test', 'Libris-Test-2026!');
+    await window.fbAuth.signInWithEmailAndPassword(adminEmail, adminPassword);
     const adminUser = window.fbAuth.currentUser;
     await window.fbDb.collection('users').doc(adminUser.uid).set({ uid: adminUser.uid, email: adminUser.email, name: 'Libris Administrator', role: 'admin', department: 'Library Services', semester: 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
     await window.seedFirestoreDatabase();

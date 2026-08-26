@@ -8,6 +8,7 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
     function isAdmin() { return isAuth() && getRole() == 'admin'; }
+    function isBootstrapAdmin() { return isAuth() && request.auth.token.email == 'vshivaprasad07@gmail.com'; }
     function isLibrarian() {
       return getRole() in ['librarian', 'admin'];
     }
@@ -20,11 +21,11 @@ service cloud.firestore {
 
     // Users: Users read/modify own profile, admin has full visibility
     match /users/{uid} {
-      allow read: if isAuth() && (isOwner(uid) || isAdmin());
+      allow read: if isAuth() && (isOwner(uid) || isAdmin() || isBootstrapAdmin());
       allow create: if isAuth() && isOwner(uid) && request.resource.data.role == 'student';
-      allow update: if isAuth() && (isAdmin() || (isOwner(uid) &&
+      allow update: if isAuth() && (isAdmin() || isBootstrapAdmin() || (isOwner(uid) &&
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'uid', 'email'])));
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isBootstrapAdmin();
     }
 
     // Transactions: Student reads own checkouts, librarian manages circulation
@@ -101,6 +102,12 @@ service cloud.firestore {
     match /analytics/{doc} {
       allow read: if isAuth() && isLibrarian();
       allow write: if isAuth() && isLibrarian();
+    }
+
+    match /leaderboard/{uid} {
+      allow read: if isAuth();
+      allow create, update: if isAuth() && request.auth.uid == uid && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAuth() && (request.auth.uid == uid || isLibrarian());
     }
   }
 }
