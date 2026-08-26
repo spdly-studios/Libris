@@ -93,6 +93,7 @@ class LibraryApp {
             toastContainer: document.getElementById('toast-container'),
             pages: {}
         };
+        this.seatBookingsUnsubscribe = null;
 
         // Populate pages cache
         Constants.PAGES.forEach(page => {
@@ -145,26 +146,30 @@ class LibraryApp {
                     this.saveLocalData('current_user', user);
                 } else {
                     // Fall back to local user if not logged in via Firebase
+                    if (this.seatBookingsUnsubscribe) {
+                        this.seatBookingsUnsubscribe();
+                        this.seatBookingsUnsubscribe = null;
+                    }
                     const stored = localStorage.getItem('smart_lib_current_user');
                     this.currentUser = stored ? JSON.parse(stored) : (this.data?.currentUser || null);
+                }
+                if (user && window.FirestoreDB && !this.seatBookingsUnsubscribe) {
+                    this.seatBookingsUnsubscribe = window.FirestoreDB.onSeatBookingsChange((remoteBookings) => {
+                        if (remoteBookings && remoteBookings.length > 0) {
+                            localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(remoteBookings));
+                            if (AppState.currentRoute === 'library') {
+                                this.renderSeatMap();
+                            }
+                        }
+                    });
                 }
                 this.updateAuthUI();
                 this.renderPage(AppState.currentRoute, null);
             });
         }
 
-        // 2. Live Seat Bookings Listener (updates library seat map across all devices instantly)
+        // 2. Live Catalog Sync
         if (window.FirestoreDB) {
-            window.FirestoreDB.onSeatBookingsChange((remoteBookings) => {
-                if (remoteBookings && remoteBookings.length > 0) {
-                    localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(remoteBookings));
-                    if (AppState.currentRoute === 'library') {
-                        this.renderSeatMap();
-                    }
-                }
-            });
-
-            // 3. Live Catalog Sync
             window.FirestoreDB.onBooksChange((remoteBooks) => {
                 if (remoteBooks && remoteBooks.length > 0) {
                     this.data.books = remoteBooks;
@@ -2514,19 +2519,14 @@ class LibraryApp {
             const isMatch = t.getAttribute('data-target') === target;
             if (isMatch) {
                 t.className = 'tab active';
-                t.style.setProperty('background', 'linear-gradient(135deg, #2563eb, #1d4ed8)', 'important');
-                t.style.setProperty('color', '#ffffff', 'important');
-                t.style.setProperty('border-color', '#1d4ed8', 'important');
-                t.style.setProperty('font-weight', '700', 'important');
-                t.style.setProperty('box-shadow', '0 4px 14px rgba(37, 99, 235, 0.45)', 'important');
             } else {
                 t.className = 'tab';
-                t.style.setProperty('background', 'transparent', 'important');
-                t.style.setProperty('color', 'var(--text-secondary)', 'important');
-                t.style.setProperty('border-color', 'transparent', 'important');
-                t.style.setProperty('font-weight', '500', 'important');
-                t.style.setProperty('box-shadow', 'none', 'important');
             }
+            t.style.removeProperty('background');
+            t.style.removeProperty('color');
+            t.style.removeProperty('border-color');
+            t.style.removeProperty('font-weight');
+            t.style.removeProperty('box-shadow');
             t.blur();
         });
         this.loadResources();
@@ -3182,9 +3182,9 @@ class LibraryApp {
                     <div class="grid" style="grid-template-columns: minmax(220px, 280px) 1fr; gap: 32px; align-items: start;">
                         <!-- Left Column: Book Cover & Instant Actions -->
                         <div class="flex flex-col gap-lg">
-                            <div class="book-cover-large card p-lg text-center" style="background-color: ${book.cover || '#2563eb'}; min-height: 360px; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; box-shadow: 0 12px 32px rgba(0,0,0,0.15);">
-                                <div class="text-xs uppercase tracking-wider mb-sm" style="opacity: 0.8;">${book.department || 'GENERAL'}</div>
-                                <h3 style="font-size: 1.25rem; font-weight: 700; line-height: 1.3;">${book.title}</h3>
+                            <div class="book-cover-large p-lg text-center" style="background-color: ${book.cover || 'var(--bg-tertiary)'}; min-height: 320px; border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; border: 1px solid var(--border);">
+                                <div class="text-xs uppercase tracking-wider mb-sm" style="opacity: 0.85;">${book.department || 'GENERAL'}</div>
+                                <h3 style="font-size: 1.15rem; font-weight: 600; line-height: 1.3;">${book.title}</h3>
                                 <div class="text-sm mt-xs" style="opacity: 0.9;">${book.author}</div>
                             </div>
 
@@ -3495,18 +3495,18 @@ class LibraryApp {
 
             if (totalFine === 0) {
                 return {
-                    text: `Great news, <strong>${memory.userName}</strong>! You currently have <strong>$0.00 in outstanding fines</strong>. Your <strong>${credits} Academic Merit Credits</strong> are safe in your wallet for future perks or turnstile passes!`,
+                    text: `Great news, <strong>${memory.userName}</strong>! You currently have <strong>₹0.00 in outstanding fines</strong>. Your <strong>${credits} Academic Merit Credits</strong> are safe in your wallet for future perks or turnstile passes!`,
                     widget: `<div class="chat-widget-card flex justify-between items-center text-xs"><span>⚡ Wallet Balance: <strong>${credits} Pts</strong></span><button class="btn btn-outline btn-xs" onclick="location.hash='#dashboard'">View Leaderboard</button></div>`
                 };
             }
 
             const maxWaivable = Math.min(totalFine, credits / 10);
             return {
-                text: `You have <strong>$${totalFine.toFixed(2)} in pending fines</strong> and <strong>${credits} Academic Merit Credits</strong>. You can waive up to <strong>$${maxWaivable.toFixed(2)} USD</strong> right now!`,
+                text: `You have <strong>₹${totalFine.toFixed(2)} in pending fines</strong> and <strong>${credits} Academic Merit Credits</strong>. You can waive up to <strong>₹${maxWaivable.toFixed(2)}</strong> right now!`,
                 widget: `
                     <div class="chat-widget-card flex flex-col gap-xs text-xs">
-                        <div class="flex justify-between py-xs border-bottom"><span>Pending Fine:</span><strong class="text-error">$${totalFine.toFixed(2)}</strong></div>
-                        <div class="flex justify-between py-xs"><span>Merit Credits Available:</span><strong class="text-success">${credits} Pts ($${(credits / 10).toFixed(2)})</strong></div>
+                        <div class="flex justify-between py-xs border-bottom"><span>Pending Fine:</span><strong class="text-error">₹${totalFine.toFixed(2)}</strong></div>
+                        <div class="flex justify-between py-xs"><span>Merit Credits Available:</span><strong class="text-success">${credits} Pts (₹${(credits / 10).toFixed(2)})</strong></div>
                         <div class="flex justify-end gap-xs mt-xs">
                             <button class="btn btn-primary btn-xs" onclick="window.App.redeemMeritCredits()">⚡ Redeem & Apply Waiver</button>
                         </div>
@@ -4033,12 +4033,12 @@ class LibraryApp {
         const totalPending = pendingFines.reduce((sum, f) => sum + f.amount, 0);
         const totalPaid = paidFines.reduce((sum, f) => sum + f.amount, 0);
 
-        if (totalDueEl) totalDueEl.textContent = `$${totalPending.toFixed(2)}`;
-        if (totalPaidEl) totalPaidEl.textContent = `$${totalPaid.toFixed(2)}`;
+        if (totalDueEl) totalDueEl.textContent = `₹${totalPending.toFixed(2)}`;
+        if (totalPaidEl) totalPaidEl.textContent = `₹${totalPaid.toFixed(2)}`;
 
         if (payAllBtn) {
             payAllBtn.disabled = totalPending === 0;
-            payAllBtn.textContent = totalPending > 0 ? `Pay All ($${totalPending.toFixed(2)})` : 'No Pending Fines';
+            payAllBtn.textContent = totalPending > 0 ? `Pay All (₹${totalPending.toFixed(2)})` : 'No Pending Fines';
         }
 
         tbody.innerHTML = '';
@@ -4056,7 +4056,7 @@ class LibraryApp {
                 <td>#${f.id}</td>
                 <td><strong>${f.reason}</strong> <br><span class="text-xs text-secondary">${book ? book.title : ''}</span></td>
                 <td>${new Date(f.date).toLocaleDateString()}</td>
-                <td class="bold text-error">$${f.amount.toFixed(2)}</td>
+                <td class="bold text-error">₹${f.amount.toFixed(2)}</td>
                 <td>
                     ${f.status === 'pending'
                     ? `<button class="btn btn-error btn-xs" onclick="window.App.payFine(${f.id})">Pay Now</button>`
@@ -4079,7 +4079,7 @@ class LibraryApp {
                     <span class="badge bg-warning-light text-warning text-xs">Sandbox Mode</span>
                 </div>
                 <p class="text-sm text-secondary mb-xs">Transaction Amount</p>
-                <h2 class="text-2xl text-error mb-md">$${amount} USD</h2>
+                <h2 class="text-2xl text-error mb-md">₹${amount}</h2>
                 <div class="card p-sm bg-tertiary mb-md text-left text-xs">
                     <div class="flex justify-between py-xs border-bottom"><span>Order ID:</span><strong>CF_ORD_${Date.now().toString().slice(-6)}</strong></div>
                     <div class="flex justify-between py-xs"><span>Payment Gateway:</span><strong>Cashfree API v3</strong></div>
@@ -4100,7 +4100,7 @@ class LibraryApp {
             if (fine) fine.status = 'paid';
             this.saveLocalData('fines', this.data.fines);
             this.closeModal();
-            this.showToast(`Payment of $${amount} verified via Cashfree Sandbox!`, 'success');
+            this.showToast(`Payment of ₹${amount} verified via Cashfree Sandbox!`, 'success');
             this.renderFines();
         };
     }
@@ -4121,14 +4121,14 @@ class LibraryApp {
                     <span class="badge bg-warning-light text-warning text-xs">Sandbox Mode</span>
                 </div>
                 <p class="text-sm text-secondary mb-xs">Total Outstanding Amount (${myFines.length} items)</p>
-                <h2 class="text-2xl text-error mb-md">$${totalAmount} USD</h2>
+                <h2 class="text-2xl text-error mb-md">₹${totalAmount}</h2>
                 <div class="card p-sm bg-tertiary mb-md text-left text-xs">
                     <div class="flex justify-between py-xs border-bottom"><span>Batch Order ID:</span><strong>CF_BATCH_${Date.now().toString().slice(-6)}</strong></div>
                     <div class="flex justify-between py-xs"><span>Settlement:</span><strong>Instant Realtime Clearance</strong></div>
                 </div>
                 <div class="flex justify-end gap-sm mt-lg">
                     <button class="btn btn-secondary" id="cancel-pay-all">Cancel</button>
-                    <button class="btn btn-primary" id="confirm-pay-all">Pay $${totalAmount} via Cashfree</button>
+                    <button class="btn btn-primary" id="confirm-pay-all">Pay ₹${totalAmount} via Cashfree</button>
                 </div>
             </div>
         `);
@@ -4138,7 +4138,7 @@ class LibraryApp {
             myFines.forEach(f => f.status = 'paid');
             this.saveLocalData('fines', this.data.fines);
             this.closeModal();
-            this.showToast(`All outstanding fines ($${totalAmount}) cleared via Cashfree Sandbox!`, 'success');
+            this.showToast(`All outstanding fines (₹${totalAmount}) cleared via Cashfree Sandbox!`, 'success');
             this.renderFines();
         };
     }
@@ -4329,21 +4329,21 @@ class LibraryApp {
 
         div.innerHTML = `
             <button class="card-bookmark-btn ${isBookmarked ? 'active' : ''}" onclick="window.App.toggleBookmark(${book.id}); event.stopPropagation();" title="${isBookmarked ? 'Remove Bookmark' : 'Save Bookmark'}">
-                ${isBookmarked ? '🔖' : '📑'}
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="${isBookmarked ? 'currentColor' : 'none'}"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             </button>
-            <div class="book-cover" style="background-color: ${book.cover || '#ccc'}; display: flex; align-items: center; justify-content: center; color: white; text-align: center; font-weight: bold; padding: 10px;">
-                ${!book.coverUrl ? book.title.substring(0, 20) : ''}
+            <div class="book-cover" style="background-color: ${book.cover || 'var(--bg-tertiary)'}; display: flex; align-items: center; justify-content: center; color: white; text-align: center; font-weight: 500; font-size: 12px; padding: 12px; border: 1px solid var(--border-light);">
+                ${!book.coverUrl ? book.title.substring(0, 30) : ''}
             </div>
             <div class="book-info">
-                <div class="book-badges flex justify-between">
-                    <span class="badge bg-secondary-light text-xs">${book.department}</span>
-                    <span class="badge bg-secondary-light text-xs ${availabilityClass}">${availabilityText}</span>
+                <div class="book-badges flex justify-between items-center gap-xs">
+                    <span class="badge text-xs">${book.department}</span>
+                    <span class="badge ${book.availableCopies > 0 ? 'badge-success' : 'badge-error'} text-xs">${availabilityText}</span>
                 </div>
                 <h3 class="book-title mt-xs">${title}</h3>
                 <p class="book-author text-secondary text-sm">${author}</p>
                 <div class="book-meta mt-sm flex justify-between items-center">
-                    <div class="stars text-sm">${this.renderStars(book.rating)}</div>
-                    <span class="text-xs text-secondary">${book.publicationYear || ''}</span>
+                    <div class="stars text-xs">${this.renderStars(book.rating)}</div>
+                    <span class="text-xs text-tertiary">${book.publicationYear || ''}</span>
                 </div>
             </div>
         `;
@@ -4359,8 +4359,8 @@ class LibraryApp {
         div.innerHTML = `
             <div>
                 <div class="flex justify-between items-start">
-                    <span class="resource-icon text-2xl">${icon}</span>
-                    ${resource.verified ? '<span class="badge text-success text-xs bg-success-light">✓ Verified</span>' : ''}
+                    <span class="resource-icon text-xl">${icon}</span>
+                    ${resource.verified ? '<span class="badge badge-success text-xs">Verified</span>' : ''}
                 </div>
                 <h4 class="mt-sm">${resource.title}</h4>
                 <p class="text-sm text-secondary mt-xs">${resource.subject}</p>
@@ -4433,7 +4433,7 @@ class LibraryApp {
             if (!this.currentUser.interestScores) this.currentUser.interestScores = {};
             const category = book ? book.category : 'General';
             this.currentUser.interestScores[category] = (this.currentUser.interestScores[category] || 0) + 1;
-            
+
             if (window.FirebaseAuth && window.FirebaseAuth.updateProfile) {
                 window.FirebaseAuth.updateProfile({ interestScores: this.currentUser.interestScores });
             }
@@ -5046,46 +5046,46 @@ class LibraryApp {
 
         this.openModal('Digital Student ID & Library Pass', `
             <div class="p-sm flex flex-col items-center">
-                <div class="digital-id-card w-full mb-md" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">
+                <div class="digital-id-card w-full mb-md">
                     <div class="flex justify-between items-start mb-md">
                         <div>
-                            <div class="text-xs uppercase tracking-wider text-white" style="opacity:0.8;">Smart University Library System</div>
-                            <h2 class="text-white mt-xs" style="font-size:1.3rem;">Student Access Pass</h2>
+                            <div class="text-xs uppercase tracking-wider text-secondary">University Library System</div>
+                            <h2 class="mt-xs text-primary" style="font-size:1.15rem;">Student Access Pass</h2>
                         </div>
-                        <span class="badge bg-success-light text-success text-xs">Active • 2026</span>
+                        <span class="badge badge-success text-xs">Active • 2026</span>
                     </div>
                     
                     <div class="flex items-center gap-md mb-md">
-                        <div style="width:54px; height:54px; border-radius:50%; background:${user.avatar || '#fff'}; color:white; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; border:2px solid rgba(255,255,255,0.6);">
+                        <div class="avatar" style="width:48px; height:48px; font-size:16px;">
                             ${user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                            <h3 class="text-white" style="font-size:1.1rem; margin:0;">${user.name}</h3>
-                            <div class="text-white text-xs" style="opacity:0.9;">${user.department} • Semester ${user.semester || 1}</div>
-                            <div class="text-white text-xs bold mt-xs" style="opacity:0.85;">ID: ${user.regNo || 'REG-2024-8842'}</div>
+                            <h3 class="text-primary" style="font-size:1rem; margin:0;">${user.name}</h3>
+                            <div class="text-secondary text-xs">${user.department} • Semester ${user.semester || 1}</div>
+                            <div class="text-tertiary text-xs mt-xs">ID: ${user.regNo || 'REG-2024-8842'}</div>
                         </div>
                     </div>
 
-                    <div class="flex justify-between items-center bg-tertiary p-sm border-radius text-primary" style="background:rgba(255,255,255,0.95); border-radius:10px;">
+                    <div class="flex justify-between items-center bg-secondary p-sm border-radius text-primary" style="border:1px solid var(--border-light);">
                         <div class="flex flex-col">
-                            <span class="text-xs text-secondary">Active Borrows:</span>
+                            <span class="text-xs text-secondary">Active Borrows</span>
                             <strong class="text-sm">${(user.borrowedBooks || []).length} Items</strong>
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-xs text-secondary">Study Streak:</span>
-                            <strong class="text-sm text-accent">${user.studyStreak || 1} Days 🔥</strong>
+                            <span class="text-xs text-secondary">Study Streak</span>
+                            <strong class="text-sm">${user.studyStreak || 1} Days</strong>
                         </div>
                         <div class="flex flex-col">
-                            <span class="text-xs text-secondary">Gate Access:</span>
+                            <span class="text-xs text-secondary">Gate Access</span>
                             <strong class="text-sm text-success">Turnstile Clear</strong>
                         </div>
                     </div>
                 </div>
 
-                <div class="text-center p-md bg-secondary border-radius w-full">
+                <div class="text-center p-md bg-secondary border-radius w-full" style="border:1px solid var(--border-light);">
                     <p class="text-xs text-secondary mb-sm">Scan at turnstile gate or circulation desk scanner</p>
                     <div class="qr-code-box mx-auto mb-sm">${qrSvg}</div>
-                    <div class="text-xs text-secondary">Valid for all library floors & 24/7 quiet study zones</div>
+                    <div class="text-xs text-tertiary">Valid for all library floors & study zones</div>
                 </div>
 
                 <div class="flex justify-end w-full mt-md">
@@ -5430,7 +5430,7 @@ class LibraryApp {
 
         const waiverAmount = Math.min(totalPendingAmount, availableCredits / 10);
         if (waiverAmount <= 0) {
-            this.showToast('You need at least 10 Merit Credits to redeem a $1.00 fine waiver.', 'warning');
+            this.showToast('You need at least 10 Merit Credits to redeem a ₹1.00 fine waiver.', 'warning');
             return;
         }
 
@@ -5442,9 +5442,9 @@ class LibraryApp {
                 
                 <div class="card p-sm bg-tertiary mb-md text-left text-xs">
                     <div class="flex justify-between py-xs border-bottom"><span>Available Merit Credits:</span><strong class="text-accent">${availableCredits} pts</strong></div>
-                    <div class="flex justify-between py-xs border-bottom"><span>Exchange Rate:</span><strong>10 pts = $1.00 USD</strong></div>
-                    <div class="flex justify-between py-xs border-bottom"><span>Total Pending Fines:</span><strong class="text-error">$${totalPendingAmount.toFixed(2)} USD</strong></div>
-                    <div class="flex justify-between py-xs"><span>Waiver Applied Today:</span><strong class="text-success">-$${waiverAmount.toFixed(2)} USD</strong></div>
+                    <div class="flex justify-between py-xs border-bottom"><span>Exchange Rate:</span><strong>10 pts = ₹1.00 INR</strong></div>
+                    <div class="flex justify-between py-xs border-bottom"><span>Total Pending Fines:</span><strong class="text-error">₹${totalPendingAmount.toFixed(2)}</strong></div>
+                    <div class="flex justify-between py-xs"><span>Waiver Applied Today:</span><strong class="text-success">-₹${waiverAmount.toFixed(2)}</strong></div>
                 </div>
 
                 <div class="flex justify-end gap-sm mt-lg">
@@ -5470,7 +5470,7 @@ class LibraryApp {
 
             this.saveLocalData('fines', this.data.fines);
             this.closeModal();
-            this.showToast(`Waived $${waiverAmount.toFixed(2)} using ${creditsNeeded} Academic Merit Credits!`, 'success');
+            this.showToast(`Waived ₹${waiverAmount.toFixed(2)} using ${creditsNeeded} Academic Merit Credits!`, 'success');
             this.renderFines();
         };
     }

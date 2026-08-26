@@ -1,4 +1,4 @@
-const CACHE_NAME = 'libris-v2.5';
+const CACHE_NAME = 'libris-v2.6';
 const ASSETS = [
   './',
   './index.html',
@@ -25,6 +25,9 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // Firebase and CDN requests must bypass this app-shell worker.
+  if (new URL(e.request.url).origin !== self.location.origin) return;
+
   // Network first strategy
   e.respondWith(
     fetch(e.request)
@@ -35,6 +38,12 @@ self.addEventListener('fetch', (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request).then((cached) => cached || caches.match('./index.html')))
+      .catch(() => caches.match(e.request).then((cached) => {
+        if (cached) return cached;
+        return caches.match('./index.html').then((fallback) => fallback || new Response('', {
+          status: 503,
+          statusText: 'Offline'
+        }));
+      }))
   );
 });

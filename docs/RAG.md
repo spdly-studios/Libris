@@ -53,7 +53,7 @@ e:/Projects/Smart Library/
   - **Pure SVG QR Generator**: 21x21 matrix algorithm generating scalable vector QR tickets.
   - **Collaborative Study Rooms Manager**: 4 multimedia suites, slot reservations, and group member tagging.
   - **Syllabus Auto-Mapper**: Topic concept extraction and 320+ book catalog keyword matching.
-  - **Academic Merit Credits & Fine Waiver Engine**: Daily streak + contribution point accrual and 10 pts = $1.00 fine offset.
+  - **Academic Merit Credits & Fine Waiver Engine**: Daily streak + contribution point accrual and 10 pts = ₹1.00 fine offset.
   - **Cashfree Sandbox Gateway**: Online fine clearance simulation with order tracking.
   - **Batch CSV/JSON Importer & ISBN Barcode Scanner**: Local file reading and instant catalog lookups.
 

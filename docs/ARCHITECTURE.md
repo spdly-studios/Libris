@@ -150,7 +150,7 @@ LIbris has evolved into a **full-stack, cloud-backed web application** deployed 
 - **`App.showDigitalIDModal()`**: Displays interactive Student Library Pass with QR turnstile verification.
 - **`App.renderStudyRooms()`**: Renders 4 multimedia suites with live reservation triggers.
 - **`App.renderSyllabusMapper(container)`**: Maps course syllabus units to library shelf coordinates.
-- **`App.calculateMeritCredits()` / `App.redeemMeritCredits()`**: Academic merit point redemption for fine waivers (10 pts = $1.00 USD).
+- **`App.calculateMeritCredits()` / `App.redeemMeritCredits()`**: Academic merit point redemption for fine waivers (10 pts = ₹1.00).
 - **`window.seedFirestoreDatabase()`**: One-time cloud seeder uploading all local collections to Firebase.
 
 ---

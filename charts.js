@@ -14,23 +14,23 @@ window.Charts = (function() {
         }
     }) : null;
 
-    // Color palette
+    // Color palette (Minimal, Calm, Professional)
     const CHART_COLORS = [
-        '#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED', 
-        '#0891B2', '#EA580C', '#4F46E5', '#059669', '#DB2777'
+        '#1E293B', '#2563EB', '#059669', '#D97706', '#64748B', 
+        '#0284C7', '#475569', '#3B82F6', '#0D9488', '#52525B'
     ];
 
     // Helpers
     function getTheme() {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         return {
-            text: isDark ? '#E5E7EB' : '#111827',
-            textMuted: isDark ? '#9CA3AF' : '#6B7280',
-            grid: isDark ? '#374151' : '#E5E7EB',
-            bg: isDark ? '#1F2937' : '#FFFFFF',
-            tooltipBg: isDark ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-            tooltipText: isDark ? '#FFFFFF' : '#000000',
-            tooltipBorder: isDark ? '#374151' : '#E5E7EB'
+            text: isDark ? '#FAFAFA' : '#18181B',
+            textMuted: isDark ? '#A1A1AA' : '#71717A',
+            grid: isDark ? '#27272A' : '#E4E4E7',
+            bg: isDark ? '#121215' : '#FFFFFF',
+            tooltipBg: isDark ? '#18181B' : '#FFFFFF',
+            tooltipText: isDark ? '#FAFAFA' : '#18181B',
+            tooltipBorder: isDark ? '#27272A' : '#E4E4E7'
         };
     }
 

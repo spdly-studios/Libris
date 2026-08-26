@@ -95,7 +95,7 @@ A unified single-page platform (13 integrated routes) offering:
 ### 7. ⚡ Academic Merit Credits & Automated Fine Waiver Engine
 - **Merit Points Accrual Formula**:
   $$\text{Merit Credits} = (\text{Study Streak Days} \times 5) + (\text{Peer Notes Uploaded} \times 20) + (\text{Books Read} \times 2) + 60$$
-- **Fine Waiver Exchange Rate**: 10 Merit Credits = $1.00 USD fine offset.
+- **Fine Waiver Exchange Rate**: 10 Merit Credits = ₹1.00 fine offset.
 - **1-Click Redemption**: Automatically checks pending balances and applies immediate balance waivers.
 
 ### 8. 💳 Cashfree Sandbox Payment Gateway & Missing Book Ticketing
@@ -244,7 +244,7 @@ A unified single-page platform (13 integrated routes) offering:
   - 🔥 **Daily Study Streak**: +5 Credits / day
   - 📝 **Verified Note Uploads**: +20 Credits / document
   - 📖 **Completed Readings**: +2 Credits / book
-- **Fine Offset**: 10 Merit Credits = $1.00 USD fine waiver.
+- **Fine Offset**: 10 Merit Credits = ₹1.00 fine waiver.
 - **Speaker Notes**:
   > "We turn academic discipline into positive reinforcement. Students earn merit points through consistent study streaks and peer notes contributions, which can be redeemed to waive overdue fines."
 
