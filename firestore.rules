@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() { return request.auth != null; }
+    function isOwner(uid) { return request.auth.uid == uid; }
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin() { return getRole() == 'admin'; }
+    function isLibrarian() {
+      return getRole() in ['librarian', 'admin'];
+    }
+
+    // Books: Anyone can browse catalog, staff can create/update
+    match /books/{bookId} {
+      allow read: if true;
+      allow write: if isAuth() && isLibrarian();
+    }
+
+    // Users: Users read/modify own profile, admin has full visibility
+    match /users/{uid} {
+      allow read, write: if isAuth() && (isOwner(uid) || isAdmin());
+    }
+
+    // Transactions: Student reads own checkouts, librarian manages circulation
+    match /transactions/{txId} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.studentId == request.auth.uid || 
+        isLibrarian()
+      );
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && isLibrarian();
+    }
+
+    // Seat Bookings: Real-time map is visible to all authenticated campus members
+    match /seatBookings/{id} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.studentId == request.auth.uid || 
+        isLibrarian()
+      );
+    }
+
+    // Collaborative Study Rooms
+    match /roomBookings/{id} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.studentId == request.auth.uid || 
+        isLibrarian()
+      );
+    }
+
+    // Digital Notes / Papers
+    match /notes/{id} {
+      allow read: if true;
+      allow create: if isAuth();
+      allow update, delete: if isAuth() && (
+        resource.data.uploaderId == request.auth.uid || 
+        isLibrarian()
+      );
+    }
+
+    // Fines
+    match /fines/{id} {
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.studentId == request.auth.uid || 
+        isLibrarian()
+      );
+      allow create, update: if isAuth() && isLibrarian();
+    }
+
+    // Notifications
+    match /notifications/{id} {
+      allow read, write: if isAuth();
+    }
+
+    // Analytics Aggregates
+    match /analytics/{doc} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+  }
+}

@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <title>LIbris</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css?v=2.5">
+    <link rel="manifest" href="manifest.json">
+
+    <link rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+  </head>
+
+  <body>
+    <div id="app">
+      <!-- Sidebar Navigation -->
+      <nav id="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" class="logo-icon">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            <span class="logo-text">LIbris</span>
+          </div>
+          <button id="sidebar-toggle" class="icon-btn sidebar-toggle-btn" aria-label="Toggle Sidebar">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="sidebar-nav">
+          <a href="#home" class="nav-item active" data-page="home">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Home</span>
+          </a>
+          <a href="#search" class="nav-item" data-page="search">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Search</span>
+          </a>
+          <a href="#library" class="nav-item" data-page="library">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 21h18"></path>
+              <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+              <path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"></path>
+            </svg>
+            <span>Library</span>
+          </a>
+          <a href="#resources" class="nav-item" data-page="resources">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Resources</span>
+          </a>
+          <a href="#dashboard" class="nav-item" data-page="dashboard">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Dashboard</span>
+          </a>
+          <a href="#ai-librarian" class="nav-item" data-page="ai-librarian">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>AI Librarian</span>
+          </a>
+          <a href="#fines" class="nav-item" data-page="fines">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <span>Fines & Merits</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" onclick="window.App.showDigitalIDModal()">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+              <circle cx="9" cy="10" r="2"></circle>
+              <line x1="15" y1="8" x2="17" y2="8"></line>
+              <line x1="15" y1="12" x2="17" y2="12"></line>
+              <line x1="7" y1="16" x2="17" y2="16"></line>
+            </svg>
+            <span>Digital ID Pass</span>
+          </a>
+
+          <div class="nav-separator"></div>
+
+          <a href="#profile" class="nav-item" data-page="profile">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Profile</span>
+          </a>
+          <a href="#admin" class="nav-item" id="nav-item-admin" data-page="admin" data-role="admin">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>Admin</span>
+          </a>
+          <a href="#settings" class="nav-item" data-page="settings">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
+            </svg>
+            <span>Settings</span>
+          </a>
+        </div>
+
+        <div class="sidebar-bottom">
+          <button id="theme-toggle" class="icon-btn" aria-label="Toggle Theme">
+            <svg class="sun-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
+              fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
+              fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main id="main-content">
+        <!-- Top Bar -->
+        <header id="top-bar">
+          <div class="topbar-left">
+            <button id="mobile-menu-btn" class="icon-btn hide-desktop" aria-label="Menu">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+            <h1 id="page-title">Home</h1>
+          </div>
+          <div class="topbar-right">
+            <div class="search-shortcut" id="global-search-btn">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <span class="shortcut-text">Search...</span>
+              <kbd>Ctrl+K</kbd>
+            </div>
+            <button class="btn btn-outline btn-sm flex items-center gap-xs" id="header-id-card-btn"
+              onclick="window.App.showDigitalIDModal()" title="View Digital Student Library ID Card">
+              <span>🪪</span>
+              <span class="hide-mobile">Digital ID</span>
+            </button>
+            <button class="icon-btn notification-btn" id="notification-btn" aria-label="Notifications"
+              onclick="location.hash='#notifications'">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span class="badge" id="notification-badge">3</span>
+            </button>
+            <div class="user-dropdown" id="user-menu-container">
+              <div class="flex gap-xs">
+                <button class="btn btn-outline btn-sm" id="header-login-btn"
+                  onclick="window.App.openAuthModal('login')">Sign In</button>
+                <button class="btn btn-primary btn-sm" id="header-register-btn"
+                  onclick="window.App.openAuthModal('register')">Sign Up</button>
+              </div>
+              <div class="user-profile-menu flex items-center gap-xs" id="header-user-info" style="display: none;">
+                <div class="avatar" id="header-user-avatar" onclick="location.hash='#profile'" title="Go to profile">
+                  <span>AM</span>
+                </div>
+                <div class="header-user-details flex flex-col" onclick="location.hash='#profile'"
+                  style="cursor: pointer;">
+                  <span class="text-xs bold" id="header-user-name">Alex Mercer</span>
+                  <span class="badge text-xs" id="header-user-role"
+                    style="font-size: 10px; padding: 0 4px; border-radius: 4px;">Student</span>
+                </div>
+                <button class="btn btn-ghost btn-sm icon-btn" id="header-logout-btn" title="Sign Out"
+                  onclick="window.App.logout()">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Pages Container -->
+        <div id="page-container">
+
+          <!-- Home Page -->
+          <section id="page-home" class="page">
+            <div class="welcome-banner">
+              <div class="banner-content">
+                <h2>Welcome back, John!</h2>
+                <p>Ready to discover something new today?</p>
+              </div>
+            </div>
+
+            <div class="quick-search-container">
+              <div class="quick-search-box">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" placeholder="Search books, resources, notes..." id="home-search-input">
+                <button class="btn btn-primary">Search</button>
+              </div>
+            </div>
+
+            <!-- Quick Action Launchpad -->
+            <div class="card p-md mb-lg">
+              <div class="flex justify-between items-center mb-sm">
+                <h4 class="bold text-sm">🚀 Smart Campus Launchpad</h4>
+                <span class="badge badge-accent text-xs">Direct Access</span>
+              </div>
+              <div class="grid-3-col" style="gap:12px;">
+                <div class="card p-sm bg-secondary cursor-pointer hover-scale flex items-center gap-sm"
+                  onclick="window.App.showDigitalIDModal()">
+                  <span style="font-size:24px;">🪪</span>
+                  <div>
+                    <div class="bold text-sm">Digital Student ID</div>
+                    <div class="text-xs text-secondary">Turnstile & desk QR pass</div>
+                  </div>
+                </div>
+                <div class="card p-sm bg-secondary cursor-pointer hover-scale flex items-center gap-sm"
+                  onclick="location.hash='#resources'; setTimeout(()=>{ const t=document.querySelector('.tab[data-target=\'syllabus\']'); if(t) t.click(); }, 150);">
+                  <span style="font-size:24px;">🎯</span>
+                  <div>
+                    <div class="bold text-sm">Syllabus-to-Book Map</div>
+                    <div class="text-xs text-secondary">Course textbook locator</div>
+                  </div>
+                </div>
+                <div class="card p-sm bg-secondary cursor-pointer hover-scale flex items-center gap-sm"
+                  onclick="location.hash='#library'">
+                  <span style="font-size:24px;">👥</span>
+                  <div>
+                    <div class="bold text-sm">Collaborative Suites</div>
+                    <div class="text-xs text-secondary">Book 4 multimedia rooms</div>
+                  </div>
+                </div>
+                <div class="card p-sm bg-secondary cursor-pointer hover-scale flex items-center gap-sm"
+                  onclick="location.hash='#library'">
+                  <span style="font-size:24px;">🪑</span>
+                  <div>
+                    <div class="bold text-sm">5-Hour Seat Booking</div>
+                    <div class="text-xs text-secondary">Live countdown & floor plan</div>
+                  </div>
+                </div>
+                <div class="card p-sm bg-secondary cursor-pointer hover-scale flex items-center gap-sm"
+                  onclick="location.hash='#fines'">
+                  <span style="font-size:24px;">⚡</span>
+                  <div>
+                    <div class="bold text-sm">Merit Fine Waiver</div>
+                    <div class="text-xs text-secondary">Redeem study streak pts</div>
+                  </div>
+                </div>
+                <div class="card p-sm bg-secondary cursor-pointer hover-scale flex items-center gap-sm"
+                  onclick="window.App.barcodeScannerModal()">
+                  <span style="font-size:24px;">📷</span>
+                  <div>
+                    <div class="bold text-sm">Scan ISBN Barcode</div>
+                    <div class="text-xs text-secondary">Quick shelf & rack locator</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-2-col">
+              <div class="card occupancy-card">
+                <h3>Library Occupancy</h3>
+                <div class="occupancy-widget">
+                  <canvas id="home-occupancy-chart" width="200" height="100"></canvas>
+                  <div class="occupancy-stats">
+                    <span class="occupancy-value">68%</span>
+                    <span class="occupancy-label">Moderate</span>
+                  </div>
+                </div>
+                <p class="best-time">Best time to visit: <strong>Tomorrow, 9:00 AM</strong></p>
+              </div>
+
+              <div class="card stats-card">
+                <h3>Reading Stats</h3>
+                <div class="stats-grid">
+                  <div class="stat-item">
+                    <span class="stat-value">3</span>
+                    <span class="stat-label">Books Read</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-value">1,240</span>
+                    <span class="stat-label">Pages Read</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-value">7 Days</span>
+                    <span class="stat-label">Current Streak</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-header">
+              <h3>Trending Books</h3>
+              <a href="#search" class="view-all">View All</a>
+            </div>
+            <div class="carousel-container">
+              <div class="carousel" id="trending-carousel">
+                <!-- Carousel items injected via JS -->
+              </div>
+            </div>
+
+            <div class="grid-2-col mt-4">
+              <div class="card feed-card">
+                <h3>Recent Activity</h3>
+                <ul class="activity-feed" id="home-activity-feed">
+                  <!-- Feed injected via JS -->
+                </ul>
+              </div>
+              <div class="card upcoming-card">
+                <h3>Upcoming Due Books</h3>
+                <ul class="due-list" id="home-due-list">
+                  <!-- Due list injected via JS -->
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- Search Page -->
+          <section id="page-search" class="page">
+            <div class="search-hero">
+              <div class="large-search-input">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="main-search-input" placeholder="Search the library...">
+                <div class="search-suggestions" id="search-suggestions" style="display: none;"></div>
+              </div>
+
+              <div class="flex gap-xs mt-sm flex-wrap justify-center">
+                <button class="btn btn-outline btn-xs flex items-center gap-xs"
+                  onclick="window.App.barcodeScannerModal()" title="Scan physical book ISBN">
+                  <span>📷</span><span>Scan ISBN Barcode</span>
+                </button>
+                <button class="btn btn-outline btn-xs flex items-center gap-xs"
+                  onclick="window.App.importCatalogModal()" title="Import CSV or JSON catalog">
+                  <span>📂</span><span>Import Catalog File</span>
+                </button>
+                <button class="btn btn-outline btn-xs flex items-center gap-xs"
+                  onclick="location.hash='#resources'; setTimeout(()=>{ const t=document.querySelector('.tab[data-target=\'syllabus\']'); if(t) t.click(); }, 150);">
+                  <span>🎯</span><span>Syllabus-to-Book NLP</span>
+                </button>
+                <button class="btn btn-outline btn-xs flex items-center gap-xs"
+                  onclick="window.App.raiseMissingBookQueryModal()">
+                  <span>🙋</span><span>Missing Book Query</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <div class="filter-chips">
+                <button class="chip active">All</button>
+                <button class="chip">Books</button>
+                <button class="chip">Resources</button>
+                <button class="chip">Notes</button>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="toggle-advanced-filters">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                Filters
+              </button>
+            </div>
+
+            <div class="advanced-filters" id="advanced-filters" style="display: none;">
+              <div class="filter-group">
+                <label for="filter-department">Department</label>
+                <select id="filter-department" class="select-input">
+                  <option value="all">All Departments</option>
+                  <option value="CS">Computer Science</option>
+                  <option value="PHY">Physics</option>
+                  <option value="ECE">Electronics</option>
+                  <option value="ME">Mechanical</option>
+                  <option value="CE">Civil</option>
+                  <option value="MATH">Mathematics</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="filter-availability">Availability</label>
+                <select id="filter-availability" class="select-input">
+                  <option value="all">Any Availability</option>
+                  <option value="available">Available Now</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="filter-sort">Sort By</label>
+                <select id="filter-sort" class="select-input">
+                  <option value="relevance">Relevance</option>
+                  <option value="title">Title (A-Z)</option>
+                  <option value="author">Author (A-Z)</option>
+                  <option value="rating">Highest Rated</option>
+                  <option value="popular">Most Popular</option>
+                  <option value="newest">Newest Added</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="search-results-header">
+              <span class="results-count">Showing <strong id="results-count">0</strong> results</span>
+              <div class="view-toggles">
+                <button class="icon-btn active" data-view="grid"><svg viewBox="0 0 24 24" width="16" height="16"
+                    stroke="currentColor" stroke-width="2" fill="none">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg></button>
+                <button class="icon-btn" data-view="list"><svg viewBox="0 0 24 24" width="16" height="16"
+                    stroke="currentColor" stroke-width="2" fill="none">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg></button>
+              </div>
+            </div>
+
+            <div class="results-container grid-view" id="search-results-container">
+              <!-- Results injected via JS -->
+            </div>
+          </section>
+
+          <!-- Library (Crowd Intel) Page -->
+          <section id="page-library" class="page">
+            <div class="occupancy-hero card">
+              <div class="occupancy-hero-content">
+                <h2>Current Occupancy</h2>
+                <p>Live status of library zones</p>
+              </div>
+              <div class="occupancy-gauge-container">
+                <canvas id="main-occupancy-chart" width="300" height="150"></canvas>
+              </div>
+            </div>
+
+            <div class="grid-4-col mt-4">
+              <div class="stat-card">
+                <div class="stat-title">Total Seats</div>
+                <div class="stat-value">500</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Occupied</div>
+                <div class="stat-value">340</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Available</div>
+                <div class="stat-value text-success">160</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Quiet Zones</div>
+                <div class="stat-value">45% Full</div>
+              </div>
+            </div>
+
+            <!-- Spacious Charts Grid with Generous Padding -->
+            <div class="grid-2-col mt-4" style="gap: 28px; margin-bottom: 28px;">
+              <div class="chart-card-spacious">
+                <div class="flex justify-between items-center mb-md">
+                  <div>
+                    <h3 style="margin:0;">📈 24-Hour Hourly Occupancy Trend</h3>
+                    <p class="text-secondary text-xs mt-xs">Peak congestion periods & quiet study windows</p>
+                  </div>
+                  <span class="badge badge-accent text-xs">24h Real-Time</span>
+                </div>
+                <canvas id="hourly-occupancy-chart" height="260"></canvas>
+              </div>
+
+              <div class="chart-card-spacious">
+                <div class="flex justify-between items-center mb-md">
+                  <div>
+                    <h3 style="margin:0;">🗓️ 7-Day Congestion Heatmap Matrix</h3>
+                    <p class="text-secondary text-xs mt-xs">Average crowd density across 7 days</p>
+                  </div>
+                  <span class="badge badge-success text-xs">Weekly Model</span>
+                </div>
+                <canvas id="weekly-heatmap-chart" height="260"></canvas>
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <div id="active-seat-booking-banner">
+                <!-- Active reservation countdown & management injected via JS -->
+              </div>
+
+              <div class="flex justify-between items-center mb-md flex-wrap gap-sm">
+                <div>
+                  <h3>🗺️ Interactive Library Floor Plan & Live Seat Booking</h3>
+                  <p class="text-secondary text-sm">Choose individual desk or group study mode (Up to 5 hours with
+                    instant pass)</p>
+                </div>
+                <div class="flex gap-md items-center text-xs flex-wrap">
+                  <!-- Booking Mode Selector -->
+                  <div class="booking-mode-toggle" id="seat-booking-mode-toggle">
+                    <button type="button" class="booking-mode-btn active" id="btn-mode-individual"
+                      onclick="window.App.setSeatBookingMode('individual')">🪑 Individual Desk</button>
+                    <button type="button" class="booking-mode-btn" id="btn-mode-group"
+                      onclick="window.App.setSeatBookingMode('group')">👥 Group Study (2-6 Desks)</button>
+                  </div>
+                  <div class="flex gap-xs items-center">
+                    <span class="flex items-center gap-xs"><span
+                        style="width:10px;height:10px;border-radius:50%;background:#10B981;display:inline-block;"></span>
+                      Available</span>
+                    <span class="flex items-center gap-xs"><span
+                        style="width:10px;height:10px;border-radius:50%;background:#EF4444;display:inline-block;"></span>
+                      Occupied</span>
+                    <span class="flex items-center gap-xs"><span
+                        style="width:10px;height:10px;border-radius:50%;background:#6366F1;display:inline-block;"></span>
+                      Reserved</span>
+                    <span class="flex items-center gap-xs"><span
+                        style="width:10px;height:10px;border-radius:50%;background:#F59E0B;display:inline-block;box-shadow:0 0 4px #f59e0b;"></span>
+                      Your Seat</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Group Selection Floating Action Bar -->
+              <div id="group-selection-action-bar" style="display:none;"></div>
+
+              <!-- Floor & Zone Filter Tabs -->
+              <div class="flex justify-between items-center mb-md flex-wrap gap-sm p-xs bg-secondary border-radius">
+                <div class="flex gap-xs flex-wrap" id="seat-zone-filters">
+                  <button class="chip active" data-zone="all">All Library Zones (48)</button>
+                  <button class="chip" data-zone="silent">🔇 Floor 2: Silent Pods (16)</button>
+                  <button class="chip" data-zone="collaborative">👥 Floor 1: Innovation Hub (16)</button>
+                  <button class="chip" data-zone="lab">💻 Floor 3: Computing Lab (16)</button>
+                </div>
+                <div class="flex gap-xs items-center text-xs" id="seat-amenity-filters">
+                  <span class="text-secondary bold">Filter:</span>
+                  <button class="chip text-xs" data-amenity="power">⚡ AC Power</button>
+                  <button class="chip text-xs" data-amenity="monitor">🖥️ 4K Display</button>
+                  <button class="chip text-xs" data-amenity="window">🪟 Window View</button>
+                </div>
+              </div>
+
+              <div id="seat-map-grid" class="p-md bg-secondary border-radius-lg"
+                style="display:grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 12px; max-height: 420px; overflow-y: auto;">
+                <!-- Dynamic Seats Injected via JS -->
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <div class="flex justify-between items-center mb-md">
+                <div>
+                  <h3>👥 Collaborative Group Study Rooms</h3>
+                  <p class="text-secondary text-sm">Reserve multimedia suites equipped with interactive smartboards and
+                    conference tools</p>
+                </div>
+                <span class="badge badge-accent">4 Tech Suites Available</span>
+              </div>
+              <div class="grid-2-col" id="study-rooms-grid">
+                <!-- Dynamic Study Rooms injected via JS -->
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <div class="flex justify-between items-center mb-md">
+                <div>
+                  <h3>📊 Real-Time Zone Availability & Environmental Monitoring</h3>
+                  <p class="text-secondary text-sm">Live sensor metrics, noise levels, lighting, and seat availability
+                    across all library floors</p>
+                </div>
+                <span class="badge badge-success text-xs">🟢 Live Telemetry</span>
+              </div>
+              <div class="zone-grid-cards" id="zone-availability-list">
+                <!-- Dynamic Zone Cards injected via JS -->
+              </div>
+            </div>
+          </section>
+
+          <!-- Resources Page -->
+          <section id="page-resources" class="page">
+            <div class="tabs" id="resource-tabs-container">
+              <button type="button" class="tab active" data-target="notes"
+                onclick="window.App.switchResourceTab('notes')">Notes</button>
+              <button type="button" class="tab" data-target="papers"
+                onclick="window.App.switchResourceTab('papers')">Question Papers</button>
+              <button type="button" class="tab" data-target="assignments"
+                onclick="window.App.switchResourceTab('assignments')">Assignments</button>
+              <button type="button" class="tab" data-target="manuals"
+                onclick="window.App.switchResourceTab('manuals')">Lab Manuals</button>
+              <button type="button" class="tab" data-target="syllabus"
+                onclick="window.App.switchResourceTab('syllabus')">🎯 Syllabus-to-Book Mapper</button>
+            </div>
+
+            <div class="filter-bar mt-4">
+              <select name="department" class="select-input">
+                <option value="">All Departments</option>
+                <option value="CS">Computer Science</option>
+                <option value="PHY">Physics</option>
+                <option value="ECE">Electronics</option>
+                <option value="ME">Mechanical</option>
+              </select>
+              <select name="semester" class="select-input">
+                <option value="">All Semesters</option>
+                <option value="1">Semester 1</option>
+                <option value="2">Semester 2</option>
+                <option value="3">Semester 3</option>
+                <option value="4">Semester 4</option>
+                <option value="5">Semester 5</option>
+                <option value="6">Semester 6</option>
+              </select>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" onclick="location.hash='#upload'">Upload Resource</button>
+            </div>
+
+            <div class="resource-grid mt-4" id="resources-container">
+              <!-- Resources injected via JS -->
+            </div>
+          </section>
+
+          <!-- Dashboard Page -->
+          <section id="page-dashboard" class="page">
+            <div class="grid-4-col">
+              <div class="stat-card">
+                <div class="stat-title">Books Borrowed</div>
+                <div class="stat-value">24</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Resources Downloaded</div>
+                <div class="stat-value">156</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Contributions</div>
+                <div class="stat-value">12</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Reading Streak</div>
+                <div class="stat-value">15 days</div>
+              </div>
+            </div>
+
+            <!-- Academic Merit Wallet & Digital Pass Status Card -->
+            <div class="grid-2-col mt-4">
+              <div class="card p-md bg-secondary flex justify-between items-center flex-wrap gap-sm">
+                <div>
+                  <span class="badge badge-accent text-xs">⚡ Merit Credits Wallet</span>
+                  <h3 class="mt-xs" id="dashboard-merit-pts-text">120 Merit Credits Available</h3>
+                  <p class="text-secondary text-xs mt-xs">Earn points from study streaks (+5/day) & note uploads
+                    (+20/doc).</p>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="location.hash='#fines'">⚡ Redeem Fine Waiver</button>
+              </div>
+
+              <div class="card p-md bg-secondary flex justify-between items-center flex-wrap gap-sm">
+                <div>
+                  <span class="badge badge-success text-xs">🪪 Digital Campus Passes</span>
+                  <h3 class="mt-xs">Student ID & Turnstile Passes</h3>
+                  <p class="text-secondary text-xs mt-xs">Instant vector QR passes for desk, room, and circulation
+                    loans.</p>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="window.App.showDigitalIDModal()">🪪 View ID
+                  Card</button>
+              </div>
+            </div>
+
+            <div class="grid-2-col mt-4">
+              <div class="card">
+                <h3>Currently Borrowed</h3>
+                <ul class="borrowed-list" id="dashboard-borrowed-list"></ul>
+              </div>
+              <div class="card">
+                <div class="flex justify-between items-center mb-sm">
+                  <h3 style="margin:0;">⚡ Live Activity & Circulation History</h3>
+                  <span class="badge badge-accent text-xs">Real-Time Transactions</span>
+                </div>
+                <ul class="activity-feed" id="dashboard-activity-feed" style="max-height: 260px; overflow-y: auto;">
+                  <!-- Injected via JS from real transactions & streak logs -->
+                </ul>
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <h3>Achievements</h3>
+              <div class="achievements-grid" id="dashboard-achievements"></div>
+            </div>
+
+            <div class="card mt-4">
+              <div class="flex justify-between items-center mb-md">
+                <div>
+                  <h3>🏆 Department Reading Leaderboard</h3>
+                  <p class="text-secondary text-sm">Top student readers this month in Computer Science</p>
+                </div>
+                <span class="badge badge-accent">August 2026</span>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Student Name</th>
+                      <th>Department</th>
+                      <th>Books Read</th>
+                      <th>Streak</th>
+                      <th>Level</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-leaderboard-tbody">
+                    <!-- Injected via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Profile Page -->
+          <section id="page-profile" class="page">
+            <div class="profile-header card">
+              <div class="profile-avatar-large">JD</div>
+              <div class="profile-info">
+                <h2>John Doe</h2>
+                <p class="text-secondary">Computer Science • Semester 6</p>
+                <div class="profile-badges mt-2">
+                  <span class="badge badge-success">Top Contributor</span>
+                  <span class="badge badge-accent">Avid Reader</span>
+                </div>
+              </div>
+              <div class="spacer"></div>
+              <div class="flex gap-xs">
+                <button class="btn btn-primary" onclick="window.App.showDigitalIDModal()">🪪 View Digital ID
+                  Card</button>
+                <button class="btn btn-outline" id="profile-edit-btn" onclick="window.App.editProfileModal()">Edit
+                  Profile</button>
+              </div>
+            </div>
+
+            <div class="grid-3-col mt-4">
+              <div class="card col-span-2">
+                <h3>Reading History</h3>
+                <ul class="history-list" id="profile-history-list"></ul>
+              </div>
+              <div class="card">
+                <h3>Bookmarks</h3>
+                <ul class="bookmark-list" id="profile-bookmarks-list"></ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- Admin Page -->
+          <section id="page-admin" class="page">
+            <div class="grid-4-col">
+              <div class="stat-card">
+                <div class="stat-title">Total Books</div>
+                <div class="stat-value">12,450</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Active Users</div>
+                <div class="stat-value">3,240</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Borrows Today</div>
+                <div class="stat-value">145</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Overdue Items</div>
+                <div class="stat-value text-error">24</div>
+              </div>
+            </div>
+
+            <div class="grid-2-col mt-4">
+              <div class="card">
+                <h3>Borrow Trends</h3>
+                <canvas id="admin-trends-chart" height="250"></canvas>
+              </div>
+              <div class="card">
+                <h3>Department Distribution</h3>
+                <canvas id="admin-dept-chart" height="250"></canvas>
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <div class="flex justify-between items-center mb-md">
+                <h3>Recent Library Borrowing Activity</h3>
+                <div class="flex gap-xs flex-wrap">
+                  <button class="btn btn-primary btn-sm" onclick="window.App.addNewBookModal()">➕ Add New Book</button>
+                  <button class="btn btn-outline btn-sm" onclick="window.App.importCatalogModal()">📥 Import
+                    CSV/JSON</button>
+                  <button class="btn btn-outline btn-sm" onclick="window.App.barcodeScannerModal()">📷 ISBN
+                    Scanner</button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.App.renderAdmin()">🔄 Refresh</button>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table" id="admin-activity-table">
+                  <thead>
+                    <tr>
+                      <th>Tx ID</th>
+                      <th>Student Name</th>
+                      <th>Book Title</th>
+                      <th>Borrow Date</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Settings Page -->
+          <section id="page-settings" class="page">
+            <div class="settings-container">
+              <div class="settings-sidebar">
+                <button class="settings-tab active" data-target="appearance">Appearance</button>
+                <button class="settings-tab" data-target="notifications">Notifications</button>
+                <button class="settings-tab" data-target="privacy">Privacy</button>
+              </div>
+              <div class="settings-content">
+                <div class="settings-section active" id="setting-appearance">
+                  <h3>Appearance</h3>
+                  <div class="setting-item">
+                    <div class="setting-info">
+                      <h4>Theme</h4>
+                      <p>Select your preferred theme</p>
+                    </div>
+                    <select class="select-input" id="theme-select">
+                      <option value="system">System Default</option>
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="settings-section" id="setting-notifications" style="display:none;">
+                  <h3>Notifications</h3>
+                  <div class="setting-item">
+                    <div class="setting-info">
+                      <h4>Email Notifications</h4>
+                      <p>Receive emails for due dates</p>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" checked>
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <div class="setting-item">
+                    <div class="setting-info">
+                      <h4>Push Notifications</h4>
+                      <p>Receive push notifications</p>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" checked>
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Book Detail Page -->
+          <section id="page-book-detail" class="page">
+            <div id="book-detail-container">
+              <!-- Injected via JS -->
+            </div>
+          </section>
+
+          <!-- AI Librarian Page -->
+          <section id="page-ai-librarian" class="page">
+            <div class="chat-container card">
+              <div class="chat-header">
+                <div class="ai-avatar">
+                  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3>Nova - AI Librarian</h3>
+                  <p class="text-secondary small">Always online to help you find what you need</p>
+                </div>
+              </div>
+              <div class="chat-messages" id="chat-messages">
+                <div class="message ai-message">
+                  <div class="message-content">
+                    Hello! I'm Nova, your AI Librarian. I can help you find books, recommend resources, or answer
+                    questions about the library. How can I assist you today?
+                  </div>
+                </div>
+              </div>
+              <div class="chat-suggestions flex flex-wrap gap-xs">
+                <button class="chip">🎯 Map my Operating Systems Syllabus</button>
+                <button class="chip">👥 Book a Collaborative Study Room</button>
+                <button class="chip">📚 Recommend ML textbooks</button>
+                <button class="chip">🪑 Check live seat count</button>
+                <button class="chip">📝 Generate IEEE citation for Clean Code</button>
+                <button class="chip">⚡ How do Merit Credits waive fines?</button>
+                <button class="chip">🕒 What are library hours today?</button>
+              </div>
+              <div class="chat-input-area">
+                <input type="text" id="chat-input"
+                  placeholder="Ask Nova anything about books, syllabus, rooms, citations, or policies...">
+                <button class="btn btn-primary icon-btn" id="send-chat-btn">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Notifications Page -->
+          <section id="page-notifications" class="page">
+            <div class="tabs">
+              <button class="tab active" data-target="all">All</button>
+              <button class="tab" data-target="unread">Unread</button>
+              <button class="tab" data-target="due">Due Soon</button>
+            </div>
+            <div class="notifications-list mt-4" id="notifications-container">
+              <!-- Injected via JS -->
+            </div>
+          </section>
+
+          <!-- Fines Page -->
+          <section id="page-fines" class="page">
+            <div class="grid-3-col">
+              <div class="stat-card border-error">
+                <div class="stat-title text-error">Total Due</div>
+                <div class="stat-value text-error" id="fines-total-due">$0.00</div>
+                <button class="btn btn-error mt-2 w-full" id="fines-pay-all-btn" onclick="window.App.payAllFines()">Pay
+                  All via Cashfree</button>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Paid Amount</div>
+                <div class="stat-value text-success" id="fines-total-paid">$0.00</div>
+                <div class="text-xs text-secondary mt-2">All transactions cleared</div>
+              </div>
+              <div class="stat-card border-accent bg-secondary">
+                <div class="stat-title text-accent">Academic Merit Credits</div>
+                <div class="stat-value text-accent" id="fines-merit-credits">120 pts</div>
+                <button class="btn btn-outline btn-sm mt-2 w-full" id="fines-redeem-waiver-btn"
+                  onclick="window.App.redeemMeritCredits()">⚡ Redeem for Fine Waiver</button>
+              </div>
+            </div>
+            <div class="card mt-4">
+              <div class="flex justify-between items-center mb-md">
+                <h3>Pending Fines & Account Queries</h3>
+                <button class="btn btn-outline btn-sm" onclick="window.App.raiseMissingBookQueryModal()">🙋 Raise
+                  Missing Book Query</button>
+              </div>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Fine ID</th>
+                    <th>Reason & Book</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status / Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Upload Page -->
+          <section id="page-upload" class="page">
+            <div class="card upload-card max-w-2xl mx-auto">
+              <h3>Upload Resource</h3>
+              <p class="text-secondary mb-4">Share notes, papers, or manuals with the community.</p>
+
+              <div class="dnd-zone" id="dnd-zone">
+                <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1" fill="none"
+                  class="text-tertiary mb-2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p>Drag and drop your file here, or click to browse</p>
+                <p class="small text-tertiary mt-1">Supports PDF, DOCX, PPTX (Max 50MB)</p>
+              </div>
+
+              <form class="upload-form mt-4">
+                <div class="form-group">
+                  <label>Resource Title</label>
+                  <input type="text" class="input" placeholder="e.g. OS Midterm Notes 2023" required>
+                </div>
+                <div class="grid-2-col">
+                  <div class="form-group">
+                    <label>Type</label>
+                    <select class="select-input">
+                      <option>Notes</option>
+                      <option>Question Paper</option>
+                      <option>Lab Manual</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Department</label>
+                    <select class="select-input">
+                      <option value="CS">Computer Science</option>
+                      <option value="ECE">Electronics</option>
+                      <option value="ME">Mechanical</option>
+                      <option value="PHY">Physics</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Description (Optional)</label>
+                  <textarea class="input" rows="3" placeholder="Brief description of the resource..."></textarea>
+                </div>
+                <div class="form-actions mt-4 flex justify-end">
+                  <button type="button" class="btn btn-ghost mr-2" onclick="location.hash='#resources'">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Upload & Publish</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+
+    <!-- Modals & Overlays -->
+    <div id="command-palette" class="modal-overlay" style="display: none;">
+      <div class="cmd-palette-modal">
+        <div class="cmd-input-wrapper">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="cmd-input" placeholder="Type a command or search...">
+        </div>
+        <div class="cmd-results" id="cmd-results"></div>
+        <div class="cmd-footer">
+          <span><kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
+          <span><kbd>Enter</kbd> to select</span>
+          <span><kbd>Esc</kbd> to close</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-container" class="modal-overlay" style="display: none;">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modal-title">Modal Title</h3>
+          <button class="icon-btn" id="close-modal-btn"><svg viewBox="0 0 24 24" width="20" height="20"
+              stroke="currentColor" stroke-width="2" fill="none">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg></button>
+        </div>
+        <div class="modal-content" id="modal-content-area"></div>
+      </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal-overlay" style="display: none;">
+      <div class="modal auth-modal-box">
+        <div class="modal-header">
+          <h3 id="auth-modal-title">Sign In to LIbris</h3>
+          <button class="icon-btn" id="close-auth-modal-btn"><svg viewBox="0 0 24 24" width="20" height="20"
+              stroke="currentColor" stroke-width="2" fill="none">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg></button>
+        </div>
+        <div class="modal-content">
+          <!-- Login Form -->
+          <form id="login-form" class="auth-form">
+            <div class="form-group">
+              <label for="login-email">Email or Student ID</label>
+              <input type="email" id="login-email" class="input" placeholder="alex.mercer@university.edu" required>
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" class="input" placeholder="••••••••" required>
+            </div>
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn btn-primary w-full">Sign In with Email</button>
+              <button type="button" class="btn btn-outline w-full mt-2 flex items-center justify-center gap-xs" id="google-login-btn" onclick="window.App.loginWithGoogle()">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.1-1.6.4-2.3L1.9 7.3C.7 9.7 0 12 0 14.5s.7 4.8 1.9 7.2l3.7-2.9z"/><path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16.5C3.7 20.2 7.5 23.5 12 23.5z"/></svg>
+                Sign In with Google
+              </button>
+            </div>
+            <div class="auth-switch mt-4 text-center">
+              <span class="text-secondary text-sm">Don't have an account? </span>
+              <a href="javascript:void(0)" id="switch-to-register" class="text-sm bold">Register</a>
+            </div>
+            <div class="demo-accounts mt-4 p-sm card bg-tertiary">
+              <div class="text-xs bold mb-xs">Quick Demo Accounts:</div>
+              <div class="flex gap-xs flex-wrap">
+                <button type="button" class="chip text-xs"
+                  onclick="window.App.fillDemoLogin('alex.mercer@university.edu', 'password123')">Student Demo</button>
+                <button type="button" class="chip text-xs"
+                  onclick="window.App.fillDemoLogin('admin@libris.edu', 'admin123')">Admin Demo</button>
+              </div>
+            </div>
+          </form>
+
+          <!-- Register Form -->
+          <form id="register-form" class="auth-form" style="display: none;">
+            <div class="form-group">
+              <label for="reg-name">Full Name</label>
+              <input type="text" id="reg-name" class="input" placeholder="John Doe" required>
+            </div>
+            <div class="grid-2-col">
+              <div class="form-group">
+                <label for="reg-email">Email Address</label>
+                <input type="email" id="reg-email" class="input" placeholder="john.doe@university.edu" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-id">Registration No / Student ID</label>
+                <input type="text" id="reg-id" class="input" placeholder="REG-2024-8842" required>
+              </div>
+            </div>
+            <div class="grid-2-col">
+              <div class="form-group">
+                <label for="reg-dept">Department</label>
+                <select id="reg-dept" class="select-input">
+                  <option value="CS">Computer Science</option>
+                  <option value="ECE">Electronics</option>
+                  <option value="ME">Mechanical</option>
+                  <option value="CE">Civil</option>
+                  <option value="PHY">Physics</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="reg-sem">Semester</label>
+                <select id="reg-sem" class="select-input">
+                  <option value="1">Semester 1</option>
+                  <option value="2">Semester 2</option>
+                  <option value="3">Semester 3</option>
+                  <option value="4">Semester 4</option>
+                  <option value="5">Semester 5</option>
+                  <option value="6">Semester 6</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="reg-password">Password</label>
+              <input type="password" id="reg-password" class="input" placeholder="••••••••" required>
+            </div>
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn btn-primary w-full">Create Account</button>
+            </div>
+            <div class="auth-switch mt-4 text-center">
+              <span class="text-secondary text-sm">Already have an account? </span>
+              <a href="javascript:void(0)" id="switch-to-login" class="text-sm bold">Sign In</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- Firebase v10 (Compat Mode for pure Vanilla JS without bundling) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+
+    <!-- LIbris Firebase Services -->
+    <script src="firebase-config.js"></script>
+    <script src="firebase-auth.js"></script>
+    <script src="firebase-db.js"></script>
+    <script src="firebase-analytics.js"></script>
+    <script src="firebase-recommendations.js"></script>
+    <script src="seed-firestore.js"></script>
+
+    <!-- App Engine & Assets -->
+    <script src="data.js?v=3.0"></script>
+    <script src="search.js?v=3.0"></script>
+    <script src="charts.js?v=3.0"></script>
+    <script src="app.js?v=3.0"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration skipped:', err));
+        });
+      }
+    </script>
+  </body>
+
+</html>
