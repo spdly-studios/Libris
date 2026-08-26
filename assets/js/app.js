@@ -230,7 +230,7 @@ class LibraryApp {
                 }
                 if (this.currentUser?.uid || this.currentUser?.id) {
                     const uid = this.currentUser.uid || this.currentUser.id;
-                const remoteFines = await window.FirestoreDB.getFines(uid);
+                    const remoteFines = await window.FirestoreDB.getFines(uid);
                     this.data.fines = remoteFines;
                 }
                 if (this.isAdmin()) {
@@ -587,7 +587,8 @@ class LibraryApp {
         const pageId = route === 'book-detail' ? 'page-book-detail' : `page-${route}`;
         const activePage = document.getElementById(pageId);
         if (activePage) {
-            activePage.style.setProperty('display', 'block', 'important');
+            const displayMode = route === 'ai-librarian' ? 'flex' : 'block';
+            activePage.style.setProperty('display', displayMode, 'important');
 
             // Trigger reflow for animation
             void activePage.offsetWidth;
@@ -2810,20 +2811,20 @@ class LibraryApp {
         if (!tbody || !this.currentUser || !window.FirestoreDB?.getLeaderboard) return;
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading live leaderboard…</td></tr>';
         window.FirestoreDB.getLeaderboard(10).then((students) => {
-          tbody.innerHTML = '';
-          if (!students.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">No leaderboard activity yet.</td></tr>';
-            return;
-          }
+            tbody.innerHTML = '';
+            if (!students.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary">No leaderboard activity yet.</td></tr>';
+                return;
+            }
 
-          students.forEach((s, idx) => {
-            const tr = document.createElement('tr');
-            let medal = `#${idx + 1}`;
-            if (idx === 0) medal = '🥇 #1';
-            if (idx === 1) medal = '🥈 #2';
-            if (idx === 2) medal = '🥉 #3';
+            students.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                let medal = `#${idx + 1}`;
+                if (idx === 0) medal = '🥇 #1';
+                if (idx === 1) medal = '🥈 #2';
+                if (idx === 2) medal = '🥉 #3';
 
-            tr.innerHTML = `
+                tr.innerHTML = `
                 <td class="bold text-accent">${medal}</td>
                 <td>
                     <div class="flex items-center gap-sm">
@@ -2836,11 +2837,11 @@ class LibraryApp {
                 <td>${s.streak || 0} days</td>
                 <td><span class="badge text-success text-xs bg-success-light">${s.score || 0} pts</span></td>
             `;
-            tbody.appendChild(tr);
-          });
+                tbody.appendChild(tr);
+            });
         }).catch((error) => {
-          console.error('[Leaderboard] Load failed:', error);
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-error">Leaderboard unavailable.</td></tr>';
+            console.error('[Leaderboard] Load failed:', error);
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-error">Leaderboard unavailable.</td></tr>';
         });
     }
 
@@ -2986,7 +2987,7 @@ class LibraryApp {
             tbody.innerHTML = '';
             this.data.transactions.slice(0, 10).forEach(t => {
                 const book = this.data.books?.find(b => b.id === t.bookId);
-            const student = this.data.students?.find(s => s.id === t.studentId) || { name: t.studentName || t.userName || 'Unknown member', department: t.department || '—' };
+                const student = this.data.students?.find(s => s.id === t.studentId) || { name: t.studentName || t.userName || 'Unknown member', department: t.department || '—' };
 
                 if (!book || !student) return;
 

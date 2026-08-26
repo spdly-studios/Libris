@@ -358,6 +358,7 @@ body.ai-workspace #main-content {
 }
 
 body.ai-workspace #page-ai-librarian {
+  display: flex;
   width: 100%;
   max-width: none;
   height: 100%;
@@ -2370,7 +2371,7 @@ input:checked+.slider:before {
 }
 
 .chat-input-area {
-  padding: 24px 20px 0;
+  padding: 20px 20px 12px;
   background-color: var(--bg-primary);
   border-top: 1px solid var(--border);
   display: flex;
