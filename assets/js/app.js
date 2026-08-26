@@ -18,8 +18,8 @@
 // ============================================================================
 
 const AppState = {
-    theme: localStorage.getItem('library_theme') || 'system',
-    sidebarCollapsed: localStorage.getItem('library_sidebar') === 'true',
+    theme: 'system',
+    sidebarCollapsed: false,
     currentRoute: 'home',
     searchQuery: '',
     searchFilters: {
@@ -43,7 +43,7 @@ const AppState = {
 
 const Constants = {
     PAGES: [
-        'home', 'search', 'library', 'resources',
+        'login', 'home', 'search', 'library', 'resources',
         'dashboard', 'profile', 'admin', 'settings',
         'book-detail', 'ai-librarian', 'notifications',
         'fines', 'upload'
@@ -94,6 +94,8 @@ class LibraryApp {
             pages: {}
         };
         this.seatBookingsUnsubscribe = null;
+        this.roomBookings = [];
+        this.authReady = false;
 
         // Populate pages cache
         Constants.PAGES.forEach(page => {
@@ -114,8 +116,8 @@ class LibraryApp {
         if (window.FirestoreDB) window.FirestoreDB.init();
         if (window.AnalyticsEngine) window.AnalyticsEngine.init();
 
-        // Initialize Local Storage fallback & sync
-        this.initLocalDatabase();
+        // Load all persistent state from Firebase; browser storage is never used.
+        this.initRemoteData();
 
         // Setup real-time Firestore listeners for seats, books & auth
         this.setupFirebaseListeners();
@@ -143,20 +145,30 @@ class LibraryApp {
                 if (user) {
                     this.currentUser = user;
                     if (this.data) this.data.currentUser = user;
-                    this.saveLocalData('current_user', user);
+                    if (this.search) this.search.history = user.searchHistory || [];
+                    this.authReady = true;
+                    if (window.FirestoreDB) {
+                        const uid = user.uid || user.id;
+                        Promise.all([window.FirestoreDB.getFines(uid), window.FirestoreDB.getTransactions(uid), window.FirestoreDB.getRoomBookings()]).then(([fines, transactions, roomBookings]) => {
+                            this.data.fines = fines;
+                            this.data.transactions = transactions;
+                            this.roomBookings = roomBookings;
+                            if (AppState.currentRoute === 'fines') this.renderFines();
+                        }).catch((error) => console.error('[Fines] Load failed:', error));
+                    }
                 } else {
-                    // Fall back to local user if not logged in via Firebase
+                    this.authReady = true;
                     if (this.seatBookingsUnsubscribe) {
                         this.seatBookingsUnsubscribe();
                         this.seatBookingsUnsubscribe = null;
                     }
-                    const stored = localStorage.getItem('smart_lib_current_user');
-                    this.currentUser = stored ? JSON.parse(stored) : (this.data?.currentUser || null);
+                    this.currentUser = null;
+                    if (window.location.hash !== '#login') window.location.hash = 'login';
                 }
                 if (user && window.FirestoreDB && !this.seatBookingsUnsubscribe) {
                     this.seatBookingsUnsubscribe = window.FirestoreDB.onSeatBookingsChange((remoteBookings) => {
                         if (remoteBookings && remoteBookings.length > 0) {
-                            localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(remoteBookings));
+                            AppState.seatBookings = remoteBookings;
                             if (AppState.currentRoute === 'library') {
                                 this.renderSeatMap();
                             }
@@ -186,7 +198,7 @@ class LibraryApp {
     // DATABASE & AUTHENTICATION (PURE FIREBASE FIRST)
     // ============================================================================
 
-    async initLocalDatabase() {
+    async initRemoteData() {
         // Fetch books from Firestore if available
         if (window.FirestoreDB) {
             try {
@@ -198,9 +210,14 @@ class LibraryApp {
                 if (remoteNotes && remoteNotes.length > 0) {
                     this.data.notes = remoteNotes;
                 }
-                const remoteTrans = await window.FirestoreDB.getTransactions();
+                const remoteTrans = await window.FirestoreDB.getTransactions(this.currentUser?.uid || this.currentUser?.id || null);
                 if (remoteTrans && remoteTrans.length > 0) {
                     this.data.transactions = remoteTrans;
+                }
+                if (this.currentUser?.uid || this.currentUser?.id) {
+                    const uid = this.currentUser.uid || this.currentUser.id;
+                    const remoteFines = await window.FirestoreDB.getFines(uid);
+                    this.data.fines = remoteFines;
                 }
             } catch (err) {
                 console.warn('[LIbris] Remote data fetch warning:', err);
@@ -211,16 +228,17 @@ class LibraryApp {
         this.currentUser = (window.FirebaseAuth && window.FirebaseAuth.currentUser) || this.data?.currentUser || null;
     }
 
-    saveLocalData(key, data) {
+    saveData(key, data) {
         if (this.data && key in this.data) {
             this.data[key] = data;
         }
 
-        // Sync with Firestore asynchronously
+        // Mutations must use the explicit Firestore service methods at their call site.
         if (window.FirestoreDB && window.FirestoreDB.db) {
             const db = window.FirestoreDB.db;
             if (key === 'books' && Array.isArray(data)) {
-                // Background update
+                Promise.all(data.map((book) => window.FirestoreDB.saveBook(book)))
+                    .catch((error) => console.error('[Books] Firestore update failed:', error));
             } else if (key === 'transactions' && Array.isArray(data) && data[0]) {
                 window.FirestoreDB.saveTransaction(data[0]);
             } else if (key === 'notes' && Array.isArray(data) && data[0]) {
@@ -354,27 +372,11 @@ class LibraryApp {
                 if (window.AnalyticsEngine) window.AnalyticsEngine.logEvent('login', { method: 'email' });
                 return;
             } catch (fbErr) {
-                console.warn('[FirebaseAuth] Firebase sign-in notice (trying local/demo fallback):', fbErr.message);
+                this.showToast(fbErr.message || 'Invalid email or password.', 'error');
+                return;
             }
         }
-
-        // Local demo accounts fallback
-        const users = JSON.parse(localStorage.getItem('smart_lib_users') || '[]');
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && (u.password === password || password === 'password123' || password === 'admin123'));
-
-        if (user) {
-            this.currentUser = user;
-            if (this.data) this.data.currentUser = user;
-            localStorage.setItem('smart_lib_current_user', JSON.stringify(user));
-
-            this.closeAuthModal();
-            this.updateAuthUI();
-            this.showToast(`Welcome back, ${user.name}!`, 'success');
-
-            this.renderPage(AppState.currentRoute, null);
-        } else {
-            this.showToast('Invalid email or password.', 'error');
-        }
+        this.showToast('Firebase Authentication is unavailable.', 'error');
     }
 
     async register(userData) {
@@ -388,16 +390,16 @@ class LibraryApp {
                 if (window.AnalyticsEngine) window.AnalyticsEngine.logEvent('user_register', { role: 'student' });
                 return;
             } catch (fbErr) {
-                console.warn('[FirebaseAuth] Firebase registration notice:', fbErr.message);
+                this.showToast(fbErr.message || 'Registration failed.', 'error');
                 if (fbErr.code === 'auth/email-already-in-use') {
                     this.showToast('Account with this email already exists in Firebase.', 'error');
-                    return;
                 }
+                return;
             }
         }
-
-        // Local storage fallback registration
-        let users = JSON.parse(localStorage.getItem('smart_lib_users') || '[]');
+        this.showToast('Firebase Authentication is unavailable.', 'error');
+        return;
+        /* let users = [];
         if (users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
             this.showToast('Account with this email already exists.', 'error');
             return;
@@ -427,16 +429,14 @@ class LibraryApp {
         };
 
         users.push(newUser);
-        localStorage.setItem('smart_lib_users', JSON.stringify(users));
 
         this.currentUser = newUser;
         if (this.data) this.data.currentUser = newUser;
-        localStorage.setItem('smart_lib_current_user', JSON.stringify(newUser));
 
         this.closeAuthModal();
         this.updateAuthUI();
         this.showToast(`Account created! Welcome, ${newUser.name}!`, 'success');
-        this.renderPage(AppState.currentRoute, null);
+        this.renderPage(AppState.currentRoute, null); */
     }
 
     async logout() {
@@ -445,7 +445,6 @@ class LibraryApp {
         }
         this.currentUser = null;
         if (this.data) this.data.currentUser = null;
-        localStorage.removeItem('smart_lib_current_user');
 
         this.updateAuthUI();
         this.showToast('Signed out successfully.', 'info');
@@ -515,6 +514,12 @@ class LibraryApp {
 
         const normalizedRoute = route === 'book' ? 'book-detail' : route;
 
+        if (this.authReady && !this.currentUser && normalizedRoute !== 'login') {
+            this.openAuthModal('login');
+            window.location.hash = 'login';
+            return;
+        }
+
         // Role Guard: restrict admin route
         if (normalizedRoute === 'admin' && (!this.currentUser || this.currentUser.role !== 'admin')) {
             this.showToast('Access denied. Administrator privileges required.', 'error');
@@ -533,7 +538,8 @@ class LibraryApp {
         this.updatePageTitle(normalizedRoute, param);
 
         // Render page
-        this.renderPage(normalizedRoute, param);
+        if (normalizedRoute === 'login') this.openAuthModal('login');
+        else this.renderPage(normalizedRoute, param);
 
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -933,7 +939,6 @@ class LibraryApp {
         }
 
         AppState.theme = themeValue;
-        localStorage.setItem('library_theme', themeValue);
 
         // Re-render charts if they exist
         if (this.charts) {
@@ -952,7 +957,6 @@ class LibraryApp {
         if (this.dom.sidebarToggle) {
             this.dom.sidebarToggle.addEventListener('click', () => {
                 AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
-                localStorage.setItem('library_sidebar', AppState.sidebarCollapsed);
                 this.updateSidebarState();
             });
         }
@@ -1533,19 +1537,7 @@ class LibraryApp {
     }
 
     getSeatDataset() {
-        const savedSeats = localStorage.getItem('smart_lib_seats');
-        if (savedSeats) {
-            try {
-                const parsed = JSON.parse(savedSeats);
-                if (Array.isArray(parsed) && parsed.length === 48 && parsed[0].code && parsed[0].floor && parsed[0].amenityIcons) {
-                    return parsed;
-                }
-            } catch (e) { /* fallback to default */ }
-        }
-
-        const defaultSeats = this.generateDefaultSeats();
-        localStorage.setItem('smart_lib_seats', JSON.stringify(defaultSeats));
-        return defaultSeats;
+        return this.generateDefaultSeats();
     }
 
     setSeatBookingMode(mode) {
@@ -1571,7 +1563,7 @@ class LibraryApp {
         if (!grid) return;
 
         AppState.seats = this.getSeatDataset();
-        AppState.seatBookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        AppState.seatBookings = AppState.seatBookings || [];
         AppState.selectedSeatZone = AppState.selectedSeatZone || 'all';
         AppState.selectedSeatAmenity = AppState.selectedSeatAmenity || null;
         AppState.seatBookingMode = AppState.seatBookingMode || 'individual';
@@ -1881,7 +1873,7 @@ class LibraryApp {
 
             const endDate = new Date(startDate.getTime() + selectedDuration * 60 * 60 * 1000);
 
-            const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+            const bookings = AppState.seatBookings || [];
             const newBooking = {
                 id: `GRP-BK-${Date.now().toString().slice(-6)}`,
                 isGroup: true,
@@ -1902,7 +1894,7 @@ class LibraryApp {
             };
 
             bookings.push(newBooking);
-            localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(bookings));
+            AppState.seatBookings = bookings;
 
             // Update seat status in seat list
             const allSeats = this.getSeatDataset();
@@ -1911,7 +1903,7 @@ class LibraryApp {
                     s.status = 'reserved';
                 }
             });
-            localStorage.setItem('smart_lib_seats', JSON.stringify(allSeats));
+            AppState.seats = allSeats;
 
             AppState.selectedGroupSeats = [];
             this.renderSeatMap();
@@ -1924,7 +1916,7 @@ class LibraryApp {
         const container = document.getElementById('active-seat-booking-banner');
         if (!container) return;
 
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        const bookings = AppState.seatBookings || [];
         const myActive = bookings.find(b => b.studentId === this.currentUser?.id && b.status === 'active');
 
         if (!myActive) {
@@ -2016,7 +2008,7 @@ class LibraryApp {
     updateSeatCountdownText() {
         const el = document.getElementById('seat-live-countdown');
         if (!el) return;
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        const bookings = AppState.seatBookings || [];
         const myActive = bookings.find(b => b.studentId === this.currentUser?.id && b.status === 'active');
         if (!myActive) return;
 
@@ -2142,7 +2134,7 @@ class LibraryApp {
 
             const endDate = new Date(startDate.getTime() + selectedDuration * 60 * 60 * 1000);
 
-            const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+            const bookings = AppState.seatBookings || [];
             const newBooking = {
                 id: `ST-BK-${Date.now().toString().slice(-6)}`,
                 isGroup: false,
@@ -2160,13 +2152,13 @@ class LibraryApp {
             };
 
             bookings.push(newBooking);
-            localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(bookings));
+            AppState.seatBookings = bookings;
 
             const allSeats = this.getSeatDataset();
             const sIndex = allSeats.findIndex(s => s.id === seat.id);
             if (sIndex !== -1) {
                 allSeats[sIndex].status = 'reserved';
-                localStorage.setItem('smart_lib_seats', JSON.stringify(allSeats));
+                AppState.seats = allSeats;
             }
 
             // Render seat map to show updated reserved status
@@ -2183,7 +2175,7 @@ class LibraryApp {
         const diff = end - now;
         const isExpired = diff <= 0;
 
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        const bookings = AppState.seatBookings || [];
         const otherBookings = bookings.filter(b =>
             b.id !== booking.id && b.status === 'active' &&
             ((b.seatId === booking.seatId) || (booking.seatIds && booking.seatIds.includes(b.seatId)))
@@ -2248,7 +2240,7 @@ class LibraryApp {
     }
 
     showSeatPassQR(bookingId) {
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        const bookings = AppState.seatBookings || [];
         const booking = bookings.find(b => b.id === bookingId);
         if (!booking) return;
 
@@ -2283,7 +2275,7 @@ class LibraryApp {
     }
 
     cancelSeatBooking(bookingId) {
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        const bookings = AppState.seatBookings || [];
         const booking = bookings.find(b => b.id === bookingId);
         if (!booking) return;
 
@@ -2301,7 +2293,7 @@ class LibraryApp {
 
         document.getElementById('confirm-cancel-seat-btn').onclick = () => {
             booking.status = 'cancelled';
-            localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(bookings));
+            AppState.seatBookings = bookings;
 
             const allSeats = this.getSeatDataset();
             allSeats.forEach(s => {
@@ -2309,7 +2301,7 @@ class LibraryApp {
                     s.status = 'available';
                 }
             });
-            localStorage.setItem('smart_lib_seats', JSON.stringify(allSeats));
+            AppState.seats = allSeats;
 
             this.closeModal();
             this.showToast(`Reservation for ${booking.seatId} cancelled and desk released.`, 'info');
@@ -2319,7 +2311,7 @@ class LibraryApp {
     }
 
     closeSeatBookingEarly(bookingId) {
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        const bookings = AppState.seatBookings || [];
         const booking = bookings.find(b => b.id === bookingId);
         if (!booking) return;
 
@@ -2361,7 +2353,7 @@ class LibraryApp {
     }
 
     extendSeatBooking(bookingId) {
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        const bookings = AppState.seatBookings || [];
         const booking = bookings.find(b => b.id === bookingId);
         if (!booking) return;
 
@@ -2385,7 +2377,7 @@ class LibraryApp {
 
         booking.endTime = new Date(proposedEnd).toISOString();
         booking.isExtended = true;
-        localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(bookings));
+        AppState.seatBookings = bookings;
 
         const endStr = new Date(proposedEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         this.showToast(`Extended! Your session is extended by 30 mins until ${endStr}.`, 'success');
@@ -2754,7 +2746,7 @@ class LibraryApp {
 
         // Extend due date to exactly 14 days from today
         trans.dueDate = maxDueDate.toISOString();
-        this.saveLocalData('transactions', this.data.transactions);
+        this.saveData('transactions', this.data.transactions);
         this.showToast('Book renewed successfully! Extended by 14 days from today.', 'success');
         this.renderDashboard();
     }
@@ -3061,7 +3053,7 @@ class LibraryApp {
 
             if (!this.data.books) this.data.books = [];
             this.data.books.unshift(newBook);
-            this.saveLocalData('books', this.data.books);
+            this.saveData('books', this.data.books);
 
             this.closeModal();
             this.showToast(`Added "${title}" to library catalog!`, 'success');
@@ -3080,7 +3072,7 @@ class LibraryApp {
 
         if (confirm(`Are you sure you want to delete "${book.title}" from the library database?`)) {
             this.data.books = this.data.books.filter(b => b.id !== bookId);
-            this.saveLocalData('books', this.data.books);
+            this.saveData('books', this.data.books);
             this.showToast(`Deleted "${book.title}" from catalog.`, 'info');
             this.renderAdmin();
         }
@@ -3325,11 +3317,7 @@ class LibraryApp {
     // ============================================================================
 
     getAIMemory() {
-        const key = `smart_lib_ai_memory_${this.currentUser?.id || 'guest'}`;
-        try {
-            const mem = localStorage.getItem(key);
-            if (mem) return JSON.parse(mem);
-        } catch (e) { }
+        if (this.currentUser?.aiMemory) return this.currentUser.aiMemory;
 
         const defaultMemory = {
             userId: this.currentUser?.id || 1,
@@ -3343,15 +3331,16 @@ class LibraryApp {
             bookingHistory: [],
             lastInteraction: new Date().toISOString()
         };
-        localStorage.setItem(key, JSON.stringify(defaultMemory));
         return defaultMemory;
     }
 
     updateAIMemory(updates) {
         const memory = this.getAIMemory();
         const updated = { ...memory, ...updates, lastInteraction: new Date().toISOString() };
-        const key = `smart_lib_ai_memory_${this.currentUser?.id || 'guest'}`;
-        localStorage.setItem(key, JSON.stringify(updated));
+        if (this.currentUser) {
+            this.currentUser.aiMemory = updated;
+            window.FirebaseAuth.updateProfile({ aiMemory: updated }).catch((error) => console.error('[AI] Memory update failed:', error));
+        }
         return updated;
     }
 
@@ -3789,7 +3778,7 @@ class LibraryApp {
         const startDate = new Date();
         const endDate = new Date(startDate.getTime() + durationHours * 60 * 60 * 1000);
 
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_seat_bookings') || '[]');
+        const bookings = AppState.seatBookings || [];
         const bookingId = isGroup ? `GRP-BK-${Date.now().toString().slice(-6)}` : `ST-BK-${Date.now().toString().slice(-6)}`;
 
         const newBooking = {
@@ -3812,13 +3801,13 @@ class LibraryApp {
         };
 
         bookings.push(newBooking);
-        localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(bookings));
+        AppState.seatBookings = bookings;
 
         // Mark seats as reserved
         allSeats.forEach(s => {
             if (seatIds.includes(s.id)) s.status = 'reserved';
         });
-        localStorage.setItem('smart_lib_seats', JSON.stringify(allSeats));
+        AppState.seats = allSeats;
 
         // Save preference in memory
         this.updateAIMemory({
@@ -3999,7 +3988,7 @@ class LibraryApp {
         div.addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON' && !n.read) {
                 n.read = true;
-                this.saveLocalData('notifications', this.data.notifications);
+                this.saveData('notifications', this.data.notifications);
                 div.classList.remove('unread');
                 const dot = div.querySelector('.unread-dot');
                 if (dot) dot.remove();
@@ -4096,12 +4085,18 @@ class LibraryApp {
         `);
 
         document.getElementById('cancel-pay').onclick = () => this.closeModal();
-        document.getElementById('confirm-pay').onclick = () => {
-            if (fine) fine.status = 'paid';
-            this.saveLocalData('fines', this.data.fines);
-            this.closeModal();
-            this.showToast(`Payment of ₹${amount} verified via Cashfree Sandbox!`, 'success');
-            this.renderFines();
+        document.getElementById('confirm-pay').onclick = async () => {
+            if (!fine || !this.currentUser?.uid) return this.showToast('Sign in to pay a fine.', 'error');
+            try {
+                await window.FirestoreDB.payFine(fine.id, this.currentUser.uid, { provider: 'cashfree-sandbox' });
+                fine.status = 'paid';
+                this.closeModal();
+                this.showToast(`Payment of ₹${amount} recorded in Firebase.`, 'success');
+                this.renderFines();
+            } catch (error) {
+                console.error('[Fines] Payment failed:', error);
+                this.showToast(error.message || 'Payment could not be recorded.', 'error');
+            }
         };
     }
 
@@ -4134,12 +4129,17 @@ class LibraryApp {
         `);
 
         document.getElementById('cancel-pay-all').onclick = () => this.closeModal();
-        document.getElementById('confirm-pay-all').onclick = () => {
-            myFines.forEach(f => f.status = 'paid');
-            this.saveLocalData('fines', this.data.fines);
-            this.closeModal();
-            this.showToast(`All outstanding fines (₹${totalAmount}) cleared via Cashfree Sandbox!`, 'success');
-            this.renderFines();
+        document.getElementById('confirm-pay-all').onclick = async () => {
+            try {
+                await Promise.all(myFines.map(f => window.FirestoreDB.payFine(f.id, this.currentUser.uid, { provider: 'cashfree-sandbox' })));
+                myFines.forEach(f => { f.status = 'paid'; });
+                this.closeModal();
+                this.showToast(`All payments (₹${totalAmount}) recorded in Firebase.`, 'success');
+                this.renderFines();
+            } catch (error) {
+                console.error('[Fines] Bulk payment failed:', error);
+                this.showToast(error.message || 'One or more payments could not be recorded.', 'error');
+            }
         };
     }
 
@@ -4295,7 +4295,7 @@ class LibraryApp {
 
                     if (!this.data.notes) this.data.notes = [];
                     this.data.notes.unshift(newResource);
-                    this.saveLocalData('notes', this.data.notes);
+                    this.saveData('notes', this.data.notes);
 
                     this.showToast(`Resource "${newResource.title}" published to catalog!`, 'success');
                     btn.disabled = false;
@@ -4461,18 +4461,14 @@ class LibraryApp {
             this.showToast('Saved to bookmarks!', 'success');
         }
 
-        // Sync with this.data and localStorage
+        // Persist the account-scoped profile in Firestore.
         if (this.data?.currentUser) {
             this.data.currentUser.bookmarks = this.currentUser.bookmarks;
         }
-        localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
-
-        let users = JSON.parse(localStorage.getItem('smart_lib_users') || '[]');
-        const userIdx = users.findIndex(u => u.id === this.currentUser.id);
-        if (userIdx !== -1) {
-            users[userIdx] = this.currentUser;
-            localStorage.setItem('smart_lib_users', JSON.stringify(users));
-        }
+        window.FirebaseAuth.updateProfile({ bookmarks: this.currentUser.bookmarks }).catch((error) => {
+            console.error('[Profile] Bookmark update failed:', error);
+            this.showToast('Bookmark could not be saved.', 'error');
+        });
 
         // Re-render relevant active views
         if (AppState.currentRoute === 'book-detail') {
@@ -4686,7 +4682,6 @@ class LibraryApp {
         if (!this.currentUser.reservedBooks) this.currentUser.reservedBooks = [];
         if (!this.currentUser.reservedBooks.includes(book.id)) {
             this.currentUser.reservedBooks.push(book.id);
-            localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
             this.showToast(`Reserved "${book.title}". You will be notified when available.`, 'success');
         } else {
             this.showToast(`Already reserved "${book.title}".`, 'info');
@@ -4774,7 +4769,7 @@ class LibraryApp {
             book.availableCopies = parseInt(document.getElementById('edit-book-copies').value) || 0;
             book.shelf = document.getElementById('edit-book-shelf').value.trim();
 
-            this.saveLocalData('books', this.data.books);
+            this.saveData('books', this.data.books);
             this.closeModal();
             this.showToast('Book details updated successfully!', 'success');
             this.renderBookDetail(bookId);
@@ -4858,13 +4853,13 @@ class LibraryApp {
 
         trans.status = 'returned';
         trans.returnDate = new Date().toISOString();
-        this.saveLocalData('transactions', this.data.transactions);
+        this.saveData('transactions', this.data.transactions);
 
         // Replenish book stock
         const book = this.data.books?.find(b => b.id === trans.bookId);
         if (book) {
             book.availableCopies = (book.availableCopies || 0) + 1;
-            this.saveLocalData('books', this.data.books);
+            this.saveData('books', this.data.books);
         }
 
         this.showToast('Book marked as returned successfully.', 'success');
@@ -4878,7 +4873,7 @@ class LibraryApp {
         // Increment download counter
         if (note) {
             note.downloads = (note.downloads || 0) + 1;
-            this.saveLocalData('notes', this.data.notes);
+            this.saveData('notes', this.data.notes);
             this.renderResources();
         }
 
@@ -5139,7 +5134,7 @@ class LibraryApp {
             }
         ];
 
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_room_bookings') || '[]');
+        const bookings = this.roomBookings || [];
 
         rooms.forEach(r => {
             const div = document.createElement('div');
@@ -5187,7 +5182,7 @@ class LibraryApp {
         }
 
         const slots = ['09:00 - 11:00', '11:00 - 13:00', '14:00 - 16:00', '16:00 - 18:00', '18:00 - 20:00'];
-        const bookings = JSON.parse(localStorage.getItem('smart_lib_room_bookings') || '[]');
+        const bookings = this.roomBookings || [];
 
         this.openModal(`Reserve ${roomName}`, `
             <form id="study-room-form" class="p-sm flex flex-col gap-sm">
@@ -5457,7 +5452,6 @@ class LibraryApp {
         document.getElementById('btn-confirm-waiver').onclick = () => {
             const creditsNeeded = Math.ceil(waiverAmount * 10);
             this.currentUser.redeemedMeritCredits = (this.currentUser.redeemedMeritCredits || 0) + creditsNeeded;
-            localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
 
             let remainingWaiver = waiverAmount;
             myPendingFines.forEach(f => {
@@ -5468,7 +5462,7 @@ class LibraryApp {
                 }
             });
 
-            this.saveLocalData('fines', this.data.fines);
+            this.saveData('fines', this.data.fines);
             this.closeModal();
             this.showToast(`Waived ₹${waiverAmount.toFixed(2)} using ${creditsNeeded} Academic Merit Credits!`, 'success');
             this.renderFines();

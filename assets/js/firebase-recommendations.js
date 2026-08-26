@@ -23,7 +23,7 @@ class RecommendationEngineService {
     const readingHistory = currentUser.readingHistory || [];
     const borrowedBooks = currentUser.borrowedBooks || [];
 
-    const scored = allBooks.map((book) => {
+    const scored = allBooks.map((book, index) => {
       let score = 0;
       const bookDept = (book.department || '').toLowerCase();
       const bookCat = book.category || 'General';
@@ -55,12 +55,22 @@ class RecommendationEngineService {
         score -= 25; // Lower priority for previously read
       }
 
-      return { book, score };
+      // Stable per-account tie breaking prevents identical default ordering for users with equal scores.
+      const uid = String(currentUser.uid || currentUser.id || 'anonymous');
+      let hash = 0;
+      for (const char of `${uid}:${book.id}`) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+      return { book, score, tie: Math.abs(hash) % 100000, index };
     });
 
     // Sort descending by calculated score
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, limit).map((s) => s.book);
+    scored.sort((a, b) => b.score - a.score || a.tie - b.tie || a.index - b.index);
+    // Deterministically rotate the ranked catalog per account so equal-profile users do not
+    // receive the same first page while retaining the relevance ordering within the catalog.
+    const rotation = scored.length > 1
+      ? Math.abs(String(currentUser.uid || currentUser.id).split('').reduce((sum, ch) => sum * 31 + ch.charCodeAt(0), 7)) % scored.length
+      : 0;
+    const personalized = scored.slice(rotation).concat(scored.slice(0, rotation));
+    return personalized.slice(0, limit).map((s) => s.book);
   }
 
   // Get similar books for a specific detail page

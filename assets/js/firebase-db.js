@@ -1,6 +1,6 @@
 /**
  * LIbris — Firestore Database Service (Free Tier Client SDK)
- * Replaces localStorage with asynchronous Firestore collections and real-time listeners.
+ * Uses asynchronous Firestore collections and real-time listeners as the persistence layer.
  */
 
 class FirestoreDBService {
@@ -79,10 +79,12 @@ class FirestoreDBService {
   // ==========================================
   // TRANSACTIONS
   // ==========================================
-  async getTransactions() {
+  async getTransactions(userId = null) {
     if (!this.db) return this.cachedTransactions;
     try {
-      const snap = await this.db.collection('transactions').orderBy('borrowDate', 'desc').get();
+      let query = this.db.collection('transactions');
+      if (userId) query = query.where('userId', '==', userId);
+      const snap = await query.orderBy('borrowDate', 'desc').get();
       this.cachedTransactions = snap.docs.map(doc => ({ id: isNaN(doc.id) ? doc.id : Number(doc.id), ...doc.data() }));
       return this.cachedTransactions;
     } catch (err) {
@@ -176,6 +178,27 @@ class FirestoreDBService {
     const docId = String(fine.id || Date.now());
     fine.id = isNaN(docId) ? docId : Number(docId);
     await this.db.collection('fines').doc(docId).set(fine, { merge: true });
+  }
+
+  async payFine(fineId, userId, payment = {}) {
+    if (!this.db || !fineId || !userId) throw new Error('Authenticated Firestore connection required');
+    const ref = this.db.collection('fines').doc(String(fineId));
+    await this.db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Fine not found');
+      const fine = snap.data();
+      if (fine.studentId !== userId && fine.userId !== userId) throw new Error('You cannot pay this fine');
+      if (fine.status === 'paid') return;
+      tx.update(ref, {
+        status: 'paid',
+        paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+        paidBy: userId,
+        paymentProvider: payment.provider || 'cashfree-sandbox',
+        paymentReference: payment.reference || `LIB-${userId}-${fineId}-${Date.now()}`,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    return { id: fineId, status: 'paid' };
   }
 
   // ==========================================

@@ -69,13 +69,16 @@ class FirebaseAuthService {
           regNo: data.regNo || 'REG-2024-8842',
           department: data.department || 'Computer Science',
           semester: data.semester || 6,
-          role: data.role || (firebaseUser.email?.includes('admin') ? 'admin' : 'student'),
+          // Roles are administrator-managed Firestore data. Never infer privileges from email text.
+          role: data.role || 'student',
           avatar: data.avatar || '#2563eb',
           borrowedBooks: data.borrowedBooks || [],
           bookmarks: data.bookmarks || [],
           readingHistory: data.readingHistory || [],
           reservedBooks: data.reservedBooks || [],
           interestScores: data.interestScores || {},
+          searchHistory: data.searchHistory || [],
+          aiMemory: data.aiMemory || null,
           studyStreak: data.studyStreak || 3,
           totalDownloads: data.totalDownloads || 0,
           contributions: data.contributions || 0,
@@ -84,7 +87,6 @@ class FirebaseAuthService {
         };
       } else {
         // Create initial profile in Firestore
-        const isAdmin = firebaseUser.email && firebaseUser.email.toLowerCase().includes('admin');
         const newProfile = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -92,13 +94,15 @@ class FirebaseAuthService {
           regNo: 'REG-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000),
           department: 'Computer Science',
           semester: 1,
-          role: isAdmin ? 'admin' : 'student',
+          role: 'student',
           avatar: '#2563eb',
           borrowedBooks: [],
           bookmarks: [],
           readingHistory: [],
           reservedBooks: [],
           interestScores: {},
+          searchHistory: [],
+          aiMemory: null,
           studyStreak: 1,
           totalDownloads: 0,
           contributions: 0,
@@ -116,11 +120,13 @@ class FirebaseAuthService {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         name: firebaseUser.displayName || 'User',
-        role: firebaseUser.email?.includes('admin') ? 'admin' : 'student',
+        role: 'student',
         borrowedBooks: [],
         bookmarks: [],
         readingHistory: [],
         interestScores: {},
+        searchHistory: [],
+        aiMemory: null,
         studyStreak: 1
       };
     }
@@ -146,7 +152,8 @@ class FirebaseAuthService {
         regNo: extraData.regNo || 'REG-2024-' + Math.floor(1000 + Math.random() * 9000),
         department: extraData.department || 'Computer Science',
         semester: parseInt(extraData.semester) || 1,
-        role: extraData.role || (email.includes('admin') ? 'admin' : 'student'),
+        // Public registration can only create a student account. Staff roles are assigned by admins.
+        role: 'student',
         avatar: extraData.avatar || '#3b82f6',
         borrowedBooks: [],
         bookmarks: [],

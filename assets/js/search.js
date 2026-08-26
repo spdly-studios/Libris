@@ -13,6 +13,7 @@
         constructor() {
             this.books = [];
             this.initialized = false;
+            this.history = [];
         }
 
         /**
@@ -22,15 +23,9 @@
             if (window.LibraryData && window.LibraryData.books) {
                 this.books = window.LibraryData.books;
                 this.initialized = true;
-            } else {
-                const stored = localStorage.getItem('smart_lib_books');
-                if (stored) {
-                    try {
-                        this.books = JSON.parse(stored);
-                        this.initialized = true;
-                    } catch(e) {}
-                }
             }
+            // Search is populated by the Firestore books listener; never hydrate it from browser state.
+            this.initialized = true;
         }
 
         /**
@@ -440,19 +435,25 @@
             history = history.filter(item => item.toLowerCase() !== q.toLowerCase());
             history.unshift(q);
             if (history.length > 20) history = history.slice(0, 20);
-            localStorage.setItem('searchHistory', JSON.stringify(history));
+            this.history = history;
+            if (window.FirebaseAuth?.currentUser) {
+                window.FirebaseAuth.updateProfile({ searchHistory: history }).catch((error) => console.error('[Search] History sync failed:', error));
+            }
         }
 
         getHistory() {
             try {
-                return JSON.parse(localStorage.getItem('searchHistory')) || [];
+                return this.history || [];
             } catch (e) {
                 return [];
             }
         }
 
         clearHistory() {
-            localStorage.removeItem('searchHistory');
+            this.history = [];
+            if (window.FirebaseAuth?.currentUser) {
+                window.FirebaseAuth.updateProfile({ searchHistory: [] }).catch((error) => console.error('[Search] History sync failed:', error));
+            }
         }
 
         /**

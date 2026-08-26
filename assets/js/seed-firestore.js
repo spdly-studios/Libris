@@ -103,3 +103,41 @@ window.seedFirestoreDatabase = async function() {
     statusEl.innerHTML = '❌ Seeding Error: ' + err.message;
   }
 };
+
+window.resetAndSeedInitialData = async function () {
+  if (!window.fbDb || !window.fbAuth || !window.LibraryData) return alert('Firebase is not ready.');
+  if (!window.FirebaseAuth?.currentUser || window.FirebaseAuth.currentUser.role !== 'admin') {
+    return alert('Only an authenticated administrator can reset and seed data.');
+  }
+  if (!confirm('This permanently deletes Firestore data in this project. Continue?')) return;
+  const collections = ['users', 'books', 'notes', 'transactions', 'fines', 'seatBookings', 'roomBookings', 'notifications', 'analytics'];
+  try {
+    for (const name of collections) {
+      let snapshot;
+      do {
+        snapshot = await window.fbDb.collection(name).limit(400).get();
+        if (!snapshot.empty) {
+          const batch = window.fbDb.batch();
+          snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+          await batch.commit();
+        }
+      } while (!snapshot.empty);
+    }
+    const accounts = [{ email: 'admin@libris.test', name: 'Libris Administrator', role: 'admin', department: 'Library Services', semester: 0 }, ...Array.from({ length: 5 }, (_, i) => ({ email: `student${i + 1}@libris.test`, name: `Test Student ${i + 1}`, role: 'student', department: ['Computer Science', 'Electronics', 'Mechanical', 'Physics', 'Civil'][i], semester: i + 1 }))];
+    for (const account of accounts) {
+      let credential;
+      try { credential = await window.fbAuth.createUserWithEmailAndPassword(account.email, 'Libris-Test-2026!'); }
+      catch (error) { if (error.code === 'auth/email-already-in-use') continue; throw error; }
+      await window.fbDb.collection('users').doc(credential.user.uid).set({ uid: credential.user.uid, email: account.email, ...account, borrowedBooks: [], bookmarks: [], readingHistory: [], interestScores: {}, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      await window.fbAuth.signOut();
+    }
+    // Re-authenticate as the seed administrator before writing shared catalog data.
+    await window.fbAuth.signInWithEmailAndPassword('admin@libris.test', 'Libris-Test-2026!');
+    const adminUser = window.fbAuth.currentUser;
+    await window.fbDb.collection('users').doc(adminUser.uid).set({ uid: adminUser.uid, email: adminUser.email, name: 'Libris Administrator', role: 'admin', department: 'Library Services', semester: 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await window.seedFirestoreDatabase();
+  } catch (error) {
+    console.error('[LIbris Seeder] Reset failed:', error);
+    alert(`Reset failed: ${error.message}`);
+  }
+};

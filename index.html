@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap"
       rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <link rel="stylesheet" href="assets/css/style.css?v=3.0">
     <link rel="manifest" href="manifest.json">
 
     <link rel="icon"
@@ -833,6 +833,7 @@
                   <button class="btn btn-outline btn-sm" onclick="window.App.barcodeScannerModal()">📷 ISBN
                     Scanner</button>
                   <button class="btn btn-secondary btn-sm" onclick="window.App.renderAdmin()">Refresh</button>
+                  <button class="btn btn-error btn-sm" onclick="window.resetAndSeedInitialData()">Reset &amp; Seed</button>
                 </div>
               </div>
               <div class="table-responsive">
@@ -1215,18 +1216,18 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 
     <!-- LIbris Firebase Services -->
-    <script src="firebase-config.js"></script>
-    <script src="firebase-auth.js"></script>
-    <script src="firebase-db.js"></script>
-    <script src="firebase-analytics.js"></script>
-    <script src="firebase-recommendations.js"></script>
-    <script src="seed-firestore.js"></script>
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/firebase-auth.js"></script>
+    <script src="assets/js/firebase-db.js"></script>
+    <script src="assets/js/firebase-analytics.js"></script>
+    <script src="assets/js/firebase-recommendations.js"></script>
+    <script src="assets/js/seed-firestore.js"></script>
 
     <!-- App Engine & Assets -->
-    <script src="data.js?v=3.0"></script>
-    <script src="search.js?v=3.0"></script>
-    <script src="charts.js?v=3.0"></script>
-    <script src="app.js?v=3.0"></script>
+    <script src="assets/data/data.js?v=3.0"></script>
+    <script src="assets/js/search.js?v=3.0"></script>
+    <script src="assets/js/charts.js?v=3.0"></script>
+    <script src="assets/js/app.js?v=3.0"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

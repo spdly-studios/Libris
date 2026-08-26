@@ -7,7 +7,7 @@ service cloud.firestore {
     function getRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
-    function isAdmin() { return getRole() == 'admin'; }
+    function isAdmin() { return isAuth() && getRole() == 'admin'; }
     function isLibrarian() {
       return getRole() in ['librarian', 'admin'];
     }
@@ -20,7 +20,11 @@ service cloud.firestore {
 
     // Users: Users read/modify own profile, admin has full visibility
     match /users/{uid} {
-      allow read, write: if isAuth() && (isOwner(uid) || isAdmin());
+      allow read: if isAuth() && (isOwner(uid) || isAdmin());
+      allow create: if isAuth() && isOwner(uid) && request.resource.data.role == 'student';
+      allow update: if isAuth() && (isAdmin() || (isOwner(uid) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'uid', 'email'])));
+      allow delete: if isAdmin();
     }
 
     // Transactions: Student reads own checkouts, librarian manages circulation
@@ -30,14 +34,15 @@ service cloud.firestore {
         resource.data.studentId == request.auth.uid || 
         isLibrarian()
       );
-      allow create: if isAuth();
-      allow update, delete: if isAuth() && isLibrarian();
+      allow create: if isAuth() && (request.resource.data.userId == request.auth.uid || request.resource.data.studentId == request.auth.uid);
+      allow update: if isAuth() && isLibrarian();
+      allow delete: if isAuth() && isLibrarian();
     }
 
     // Seat Bookings: Real-time map is visible to all authenticated campus members
     match /seatBookings/{id} {
       allow read: if isAuth();
-      allow create: if isAuth();
+      allow create: if isAuth() && (request.resource.data.userId == request.auth.uid || request.resource.data.studentId == request.auth.uid);
       allow update, delete: if isAuth() && (
         resource.data.userId == request.auth.uid || 
         resource.data.studentId == request.auth.uid || 
@@ -48,7 +53,7 @@ service cloud.firestore {
     // Collaborative Study Rooms
     match /roomBookings/{id} {
       allow read: if isAuth();
-      allow create: if isAuth();
+      allow create: if isAuth() && (request.resource.data.userId == request.auth.uid || request.resource.data.studentId == request.auth.uid);
       allow update, delete: if isAuth() && (
         resource.data.userId == request.auth.uid || 
         resource.data.studentId == request.auth.uid || 
@@ -73,18 +78,29 @@ service cloud.firestore {
         resource.data.studentId == request.auth.uid || 
         isLibrarian()
       );
-      allow create, update: if isAuth() && isLibrarian();
+      allow create: if isAuth() && isLibrarian();
+      allow update: if isAuth() && isLibrarian();
+      // Borrowers may only pay their own pending fine; amount and ownership cannot change.
+      allow update: if isAuth() &&
+        (resource.data.userId == request.auth.uid || resource.data.studentId == request.auth.uid) &&
+        resource.data.status == 'pending' && request.resource.data.status == 'paid' &&
+        request.resource.data.paidBy == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'paidAt', 'paidBy', 'paymentProvider', 'paymentReference', 'updatedAt'
+        ]);
     }
 
     // Notifications
     match /notifications/{id} {
-      allow read, write: if isAuth();
+      allow read: if isAuth() && (resource.data.userId == request.auth.uid || resource.data.userId == 'all' || isLibrarian());
+      allow create: if isAuth() && (request.resource.data.userId == request.auth.uid || request.resource.data.userId == 'all') && isLibrarian();
+      allow update, delete: if isAuth() && isLibrarian();
     }
 
     // Analytics Aggregates
     match /analytics/{doc} {
-      allow read: if true;
-      allow write: if isAuth();
+      allow read: if isAuth() && isLibrarian();
+      allow write: if isAuth() && isLibrarian();
     }
   }
 }
