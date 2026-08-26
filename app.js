@@ -178,65 +178,51 @@ class LibraryApp {
     }
 
     // ============================================================================
-    // DATABASE & AUTHENTICATION (FIREBASE + LOCAL CACHE)
+    // DATABASE & AUTHENTICATION (PURE FIREBASE FIRST)
     // ============================================================================
 
-    initLocalDatabase() {
-        // Seed database in localStorage if not present
-        if (!localStorage.getItem('smart_lib_db_seeded')) {
-            if (window.LibraryData) {
-                localStorage.setItem('smart_lib_users', JSON.stringify(window.LibraryData.students || []));
-                localStorage.setItem('smart_lib_current_user', JSON.stringify(window.LibraryData.currentUser || null));
-                localStorage.setItem('smart_lib_books', JSON.stringify(window.LibraryData.books || []));
-                localStorage.setItem('smart_lib_notes', JSON.stringify(window.LibraryData.notes || []));
-                localStorage.setItem('smart_lib_papers', JSON.stringify(window.LibraryData.questionPapers || []));
-                localStorage.setItem('smart_lib_transactions', JSON.stringify(window.LibraryData.transactions || []));
-                localStorage.setItem('smart_lib_fines', JSON.stringify(window.LibraryData.fines || []));
-                localStorage.setItem('smart_lib_notifications', JSON.stringify(window.LibraryData.notifications || []));
-                localStorage.setItem('smart_lib_seats', JSON.stringify(this.generateDefaultSeats()));
-                localStorage.setItem('smart_lib_db_seeded', 'true');
-            }
-        }
-
-        // Validate and migrate smart_lib_seats if missing or outdated schema
-        const rawSeats = localStorage.getItem('smart_lib_seats');
-        if (!rawSeats || !rawSeats.includes('Silent Study Pod') || !rawSeats.includes('amenityIcons') || !rawSeats.includes('zoneKey')) {
-            localStorage.setItem('smart_lib_seats', JSON.stringify(this.generateDefaultSeats()));
-        }
-
-        // Load persistent data from LocalStorage into memory
-        if (this.data) {
+    async initLocalDatabase() {
+        // Fetch books from Firestore if available
+        if (window.FirestoreDB) {
             try {
-                this.data.books = JSON.parse(localStorage.getItem('smart_lib_books')) || this.data.books;
-                this.data.students = JSON.parse(localStorage.getItem('smart_lib_users')) || this.data.students;
-                this.data.notes = JSON.parse(localStorage.getItem('smart_lib_notes')) || this.data.notes;
-                this.data.questionPapers = JSON.parse(localStorage.getItem('smart_lib_papers')) || this.data.questionPapers;
-                this.data.transactions = JSON.parse(localStorage.getItem('smart_lib_transactions')) || this.data.transactions;
-                this.data.fines = JSON.parse(localStorage.getItem('smart_lib_fines')) || this.data.fines;
-                this.data.notifications = JSON.parse(localStorage.getItem('smart_lib_notifications')) || this.data.notifications;
-            } catch (e) {
-                console.warn("LocalStorage load fallback triggered:", e);
+                const remoteBooks = await window.FirestoreDB.getBooks();
+                if (remoteBooks && remoteBooks.length > 0) {
+                    this.data.books = remoteBooks;
+                }
+                const remoteNotes = await window.FirestoreDB.getNotes();
+                if (remoteNotes && remoteNotes.length > 0) {
+                    this.data.notes = remoteNotes;
+                }
+                const remoteTrans = await window.FirestoreDB.getTransactions();
+                if (remoteTrans && remoteTrans.length > 0) {
+                    this.data.transactions = remoteTrans;
+                }
+            } catch (err) {
+                console.warn('[LIbris] Remote data fetch warning:', err);
             }
         }
 
-        // Load active user from storage
-        const storedUser = localStorage.getItem('smart_lib_current_user');
-        if (storedUser) {
-            try {
-                this.currentUser = JSON.parse(storedUser);
-                if (this.data) this.data.currentUser = this.currentUser;
-            } catch (e) {
-                this.currentUser = this.data?.currentUser || null;
-            }
-        } else {
-            this.currentUser = this.data?.currentUser || null;
-        }
+        // Set active user
+        this.currentUser = (window.FirebaseAuth && window.FirebaseAuth.currentUser) || this.data?.currentUser || null;
     }
 
     saveLocalData(key, data) {
-        localStorage.setItem(`smart_lib_${key}`, JSON.stringify(data));
         if (this.data && key in this.data) {
             this.data[key] = data;
+        }
+
+        // Sync with Firestore asynchronously
+        if (window.FirestoreDB && window.FirestoreDB.db) {
+            const db = window.FirestoreDB.db;
+            if (key === 'books' && Array.isArray(data)) {
+                // Background update
+            } else if (key === 'transactions' && Array.isArray(data) && data[0]) {
+                window.FirestoreDB.saveTransaction(data[0]);
+            } else if (key === 'notes' && Array.isArray(data) && data[0]) {
+                window.FirestoreDB.saveNote(data[0]);
+            } else if (key === 'fines' && Array.isArray(data) && data[0]) {
+                window.FirestoreDB.saveFine(data[0]);
+            }
         }
     }
 
@@ -2344,9 +2330,11 @@ class LibraryApp {
             </div>
         `);
 
-        document.getElementById('confirm-early-checkout-btn').onclick = () => {
+        document.getElementById('confirm-early-checkout-btn').onclick = async () => {
             booking.status = 'completed';
-            localStorage.setItem('smart_lib_seat_bookings', JSON.stringify(bookings));
+            if (window.FirestoreDB) {
+                await window.FirestoreDB.saveSeatBooking(booking);
+            }
 
             const allSeats = this.getSeatDataset();
             allSeats.forEach(s => {
@@ -2354,11 +2342,10 @@ class LibraryApp {
                     s.status = 'available';
                 }
             });
-            localStorage.setItem('smart_lib_seats', JSON.stringify(allSeats));
 
-            if (this.currentUser) {
+            if (this.currentUser && window.FirebaseAuth) {
                 this.currentUser.contributions = (this.currentUser.contributions || 0) + 1;
-                localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
+                await window.FirebaseAuth.updateProfile({ contributions: this.currentUser.contributions });
             }
 
             this.closeModal();
@@ -2778,18 +2765,15 @@ class LibraryApp {
 
         trans.status = 'returned';
         trans.returnDate = new Date().toISOString();
-        this.saveLocalData('transactions', this.data.transactions);
+        if (window.FirestoreDB) {
+            window.FirestoreDB.saveTransaction(trans);
+        }
 
         // Remove from user's active borrowed array
         if (this.currentUser && this.currentUser.borrowedBooks) {
             this.currentUser.borrowedBooks = this.currentUser.borrowedBooks.filter(id => id !== trans.bookId);
-            localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
-
-            let users = JSON.parse(localStorage.getItem('smart_lib_users') || '[]');
-            const idx = users.findIndex(u => u.id === this.currentUser.id);
-            if (idx !== -1) {
-                users[idx] = this.currentUser;
-                localStorage.setItem('smart_lib_users', JSON.stringify(users));
+            if (window.FirebaseAuth && window.FirebaseAuth.updateProfile) {
+                window.FirebaseAuth.updateProfile({ borrowedBooks: this.currentUser.borrowedBooks });
             }
         }
 
@@ -2797,7 +2781,9 @@ class LibraryApp {
         const book = this.data.books?.find(b => b.id === trans.bookId);
         if (book) {
             book.availableCopies = (book.availableCopies || 0) + 1;
-            this.saveLocalData('books', this.data.books);
+            if (window.FirestoreDB) {
+                window.FirestoreDB.saveBook(book);
+            }
         }
 
         this.showToast(`Returned "${book ? book.title : 'Book'}" successfully!`, 'success');
@@ -4412,17 +4398,13 @@ class LibraryApp {
             this.currentUser.readingHistory = this.currentUser.readingHistory.slice(0, 30);
         }
 
-        // Sync with this.data and localStorage
+        // Sync with this.data and Firestore profile
         if (this.data?.currentUser) {
             this.data.currentUser.readingHistory = this.currentUser.readingHistory;
         }
-        localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
 
-        let users = JSON.parse(localStorage.getItem('smart_lib_users') || '[]');
-        const idx = users.findIndex(u => u.id === this.currentUser.id);
-        if (idx !== -1) {
-            users[idx] = this.currentUser;
-            localStorage.setItem('smart_lib_users', JSON.stringify(users));
+        if (window.FirebaseAuth && window.FirebaseAuth.updateProfile) {
+            window.FirebaseAuth.updateProfile({ readingHistory: this.currentUser.readingHistory });
         }
 
         // If profile is active, refresh live
@@ -4438,18 +4420,27 @@ class LibraryApp {
         const book = this.data.books?.find(b => b.id === bookId);
         if (book) {
             book.views = (book.views || 0) + 1;
-            this.saveLocalData('books', this.data.books);
+            if (window.FirestoreDB) {
+                window.FirestoreDB.saveBook(book);
+            }
         }
 
         // 2. Add to live reading history
         this.addToReadingHistory(bookId);
 
-        // 3. Record interest metrics in user profile
+        // 3. Record interest metrics in user profile and log Analytics event
         if (this.currentUser) {
             if (!this.currentUser.interestScores) this.currentUser.interestScores = {};
             const category = book ? book.category : 'General';
             this.currentUser.interestScores[category] = (this.currentUser.interestScores[category] || 0) + 1;
-            localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
+            
+            if (window.FirebaseAuth && window.FirebaseAuth.updateProfile) {
+                window.FirebaseAuth.updateProfile({ interestScores: this.currentUser.interestScores });
+            }
+        }
+
+        if (window.AnalyticsEngine) {
+            window.AnalyticsEngine.logEvent('book_view', { bookId: bookId, category: book ? book.category : 'General' });
         }
     }
 
@@ -4639,7 +4630,9 @@ class LibraryApp {
         // Decrement availability
         book.availableCopies -= 1;
         book.borrowCount = (book.borrowCount || 0) + 1;
-        this.saveLocalData('books', this.data.books);
+        if (window.FirestoreDB) {
+            window.FirestoreDB.saveBook(book);
+        }
 
         // Add to user borrowed books
         if (!this.currentUser.borrowedBooks) this.currentUser.borrowedBooks = [];
@@ -4651,7 +4644,9 @@ class LibraryApp {
         const transaction = {
             id: Date.now(),
             bookId: book.id,
-            studentId: this.currentUser.id,
+            studentId: this.currentUser.uid || this.currentUser.id,
+            userId: this.currentUser.uid || this.currentUser.id,
+            userName: this.currentUser.name,
             borrowDate: new Date().toISOString(),
             dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
             returnDate: null,
@@ -4661,16 +4656,17 @@ class LibraryApp {
 
         if (!this.data.transactions) this.data.transactions = [];
         this.data.transactions.unshift(transaction);
-        this.saveLocalData('transactions', this.data.transactions);
+        if (window.FirestoreDB) {
+            window.FirestoreDB.saveTransaction(transaction);
+        }
 
-        // Update user storage
-        localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
+        // Update user storage & Firestore profile
+        if (window.FirebaseAuth && window.FirebaseAuth.updateProfile) {
+            window.FirebaseAuth.updateProfile({ borrowedBooks: this.currentUser.borrowedBooks });
+        }
 
-        let users = JSON.parse(localStorage.getItem('smart_lib_users') || '[]');
-        const userIdx = users.findIndex(u => u.id === this.currentUser.id);
-        if (userIdx !== -1) {
-            users[userIdx] = this.currentUser;
-            localStorage.setItem('smart_lib_users', JSON.stringify(users));
+        if (window.AnalyticsEngine) {
+            window.AnalyticsEngine.logEvent('book_borrow', { bookId: book.id, department: this.currentUser.department });
         }
 
         this.showToast(`Successfully borrowed "${book.title}"! Due in 14 days.`, 'success');
@@ -4715,13 +4711,8 @@ class LibraryApp {
             this.showToast('Saved to bookmarks!', 'success');
         }
 
-        localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
-
-        let users = JSON.parse(localStorage.getItem('smart_lib_users') || '[]');
-        const userIdx = users.findIndex(u => u.id === this.currentUser.id);
-        if (userIdx !== -1) {
-            users[userIdx] = this.currentUser;
-            localStorage.setItem('smart_lib_users', JSON.stringify(users));
+        if (window.FirebaseAuth && window.FirebaseAuth.updateProfile) {
+            window.FirebaseAuth.updateProfile({ bookmarks: this.currentUser.bookmarks });
         }
 
         if (AppState.currentRoute === 'book-detail') {
@@ -4840,18 +4831,18 @@ class LibraryApp {
             this.currentUser.department = document.getElementById('edit-user-dept').value;
             this.currentUser.semester = parseInt(document.getElementById('edit-user-sem').value);
 
-            localStorage.setItem('smart_lib_current_user', JSON.stringify(this.currentUser));
-
-            let users = JSON.parse(localStorage.getItem('smart_lib_users') || '[]');
-            const idx = users.findIndex(u => u.id === this.currentUser.id);
-            if (idx !== -1) {
-                users[idx] = this.currentUser;
-                localStorage.setItem('smart_lib_users', JSON.stringify(users));
+            if (window.FirebaseAuth && window.FirebaseAuth.updateProfile) {
+                window.FirebaseAuth.updateProfile({
+                    name: this.currentUser.name,
+                    regNo: this.currentUser.regNo,
+                    department: this.currentUser.department,
+                    semester: this.currentUser.semester
+                });
             }
 
             this.closeModal();
             this.updateAuthUI();
-            this.showToast('Profile updated successfully!', 'success');
+            this.showToast('Profile updated in Cloud Firestore!', 'success');
             this.renderProfile();
         };
     }
@@ -5247,7 +5238,9 @@ class LibraryApp {
             };
 
             bookings.push(newBooking);
-            localStorage.setItem('smart_lib_room_bookings', JSON.stringify(bookings));
+            if (window.FirestoreDB) {
+                window.FirestoreDB.saveRoomBooking(newBooking);
+            }
 
             const qrSvg = this.generateQRCodeSVG(`ROOM-PASS:${newBooking.id}:${roomId}:${slot}`, 130);
 

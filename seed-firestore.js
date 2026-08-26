@@ -66,6 +66,19 @@ window.seedFirestoreDatabase = async function() {
       }
     }
 
+    // 5b. Seed Student Profiles into /users
+    if (data.students && data.students.length > 0) {
+      for (const student of data.students) {
+        const ref = db.collection('users').doc(String(student.id));
+        batch.set(ref, {
+          ...student,
+          role: student.role || 'student',
+          interestScores: student.interestScores || { "Algorithms": 10, "Machine Learning": 15 },
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      }
+    }
+
     // 6. Seed Platform Analytics baseline doc
     const analyticsRef = db.collection('analytics').doc('platform');
     batch.set(analyticsRef, {
