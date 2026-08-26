@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap"
       rel="stylesheet">
 
-    <link rel="stylesheet" href="assets/css/style.css?v=4.1">
+    <link rel="stylesheet" href="assets/css/style.css?v=4.4">
     <link rel="manifest" href="manifest.json">
 
     <link rel="icon"
@@ -920,30 +920,32 @@
                 </svg>
               </div>
               <div>
-                <h3>Nova Assistant</h3>
-                <p class="text-secondary small">Always online to help you find what you need</p>
+                <div class="flex items-center gap-xs"><h3>Nova Assistant</h3><span class="ai-status-dot"></span><span class="text-xs text-success">Ready</span></div>
+                <p class="text-secondary small">Your account-aware library assistant</p>
               </div>
+              <div class="spacer"></div>
+              <button class="btn btn-ghost btn-sm" id="clear-ai-chat-btn" title="Start a new conversation">New chat</button>
             </div>
             <div class="chat-messages" id="chat-messages">
-              <div class="message ai-message">
-                <div class="message-content">
-                  Hello! I'm Nova, your AI Librarian. I can help you find books, recommend resources, or answer
-                  questions about the library. How can I assist you today?
-                </div>
+              <div class="ai-empty-state">
+                <div class="ai-empty-icon">✦</div>
+                <h2>What can I help you find?</h2>
+                <p>Ask about books, availability, study spaces, citations, fines, or your reading plan.</p>
               </div>
             </div>
-            <div class="chat-suggestions flex flex-wrap gap-sm">
-              <button class="chip">🎯 Map my Operating Systems Syllabus</button>
-              <button class="chip">👥 Book a Collaborative Study Room</button>
-              <button class="chip">📚 Recommend ML textbooks</button>
-              <button class="chip">🪑 Check live seat count</button>
-              <button class="chip">📝 Generate IEEE citation for Clean Code</button>
-              <button class="chip">⚡ How do Merit Credits waive fines?</button>
-              <button class="chip">🕒 What are library hours today?</button>
+            <div class="chat-suggestions" aria-label="Suggested prompts">
+              <button class="chip">Recommend books for my semester</button>
+              <button class="chip">Find an available book</button>
+              <button class="chip">Check live seats</button>
+              <button class="chip">Book a study room</button>
+              <button class="chip">Create an IEEE citation</button>
             </div>
             <div class="chat-input-area">
-              <input type="text" id="chat-input"
-                placeholder="Ask Nova anything about books, syllabus, rooms, citations, or policies...">
+              <div class="chat-composer">
+                <input type="text" id="chat-input" autocomplete="off"
+                  placeholder="Ask Nova about your library...">
+                <span class="chat-input-hint">Enter to send</span>
+              </div>
               <button class="btn btn-primary icon-btn" id="send-chat-btn">
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
                   <line x1="22" y1="2" x2="11" y2="13"></line>

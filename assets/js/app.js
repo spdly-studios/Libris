@@ -3379,9 +3379,18 @@ class LibraryApp {
         const chatContainer = document.getElementById('chat-messages');
         const input = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-chat-btn');
+        const clearBtn = document.getElementById('clear-ai-chat-btn');
         const chips = document.querySelectorAll('#page-ai-librarian .chip');
 
         if (!chatContainer || !input || !sendBtn) return;
+
+        if (clearBtn) clearBtn.onclick = () => {
+            AppState.aiChatHistory = [];
+            AppState.aiContextBook = null;
+            AppState.aiBookingState = null;
+            chatContainer.innerHTML = `<div class="ai-empty-state"><div class="ai-empty-icon">✦</div><h2>What can I help you find?</h2><p>Ask about books, availability, study spaces, citations, fines, or your reading plan.</p></div>`;
+            input.focus();
+        };
 
         // Initialize state
         AppState.aiChatHistory = AppState.aiChatHistory || [];
@@ -3421,7 +3430,8 @@ class LibraryApp {
                 if (msg.widget) this.appendChatWidget(msg.widget);
             });
             chatContainer.scrollTop = chatContainer.scrollHeight;
-        } else if (chatContainer.children.length === 0) {
+        } else if (chatContainer.children.length === 0 || chatContainer.querySelector('.ai-empty-state')) {
+            chatContainer.innerHTML = '';
             const credits = this.calculateMeritCredits();
             const streak = this.currentUser?.studyStreak || 0;
             const greeting = `Hello <strong>${memory.userName}</strong>! 👋 I'm Nova, your Autonomous AI Librarian.
